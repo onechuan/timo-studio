@@ -1,0 +1,21 @@
+{
+  "name": "@timotv/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "hono": "^4.10.0",
+    "@hono/node-server": "^1.19.6",
+    "zod": "^3.25.76",
+    "dotenv": "^17.2.3",
+    "@timotv/contracts": "workspace:*",
+    "@timotv/core": "workspace:*",
+    "@timotv/db": "workspace:*",
+    "@timotv/queue": "workspace:*"
+  }
+}

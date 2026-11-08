@@ -1,0 +1,35 @@
+name: timotv
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: timotv
+      POSTGRES_PASSWORD: timotv
+      POSTGRES_DB: timotv
+    ports: ['127.0.0.1:55439:5432']
+    volumes: ['postgres_data:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U timotv -d timotv']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    ports: ['127.0.0.1:56379:6379']
+    volumes: ['redis_data:/data']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  postgres_data:
+  redis_data:
