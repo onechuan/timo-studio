@@ -27,11 +27,11 @@ const additions = new Set([
 async function files(root: string, dir = root): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   const nested = await Promise.all(
-    entries.flatMap((entry) => {
+    entries.map(async (entry): Promise<string[]> => {
       if (dir === root && excluded.has(entry.name)) return [];
       const absolute = resolve(dir, entry.name);
       return entry.isDirectory()
-        ? files(root, absolute)
+        ? await files(root, absolute)
         : [relative(root, absolute)];
     }),
   );
