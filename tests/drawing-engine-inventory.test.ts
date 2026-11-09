@@ -7,6 +7,7 @@ const source = '/Users/onechuan/code/ai/open/frametell/packages/engine';
 const target = resolve('packages/drawing-engine');
 const excluded = new Set(['node_modules', 'package.json']);
 const patched = new Set([
+  'runtime/timing.js',
   'styles/blueprint/example/script.js',
   'styles/engraving/example/script.js',
   'styles/exploded/example/script.js',

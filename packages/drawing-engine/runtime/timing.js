@@ -55,6 +55,27 @@
 
   /** opts.gap overrides GAP (script.js META.gap); opts.voice = SCRIPT.VOICE switches to real audio durations. */
   function layout(pages, opts = {}) {
+    if (opts.timeline) {
+      const line = opts.timeline, finite = (n) => Number.isFinite(n), bad = () => { throw new Error('invalid measured timeline'); };
+      if (!line || !Array.isArray(line.pages) || line.pages.length !== pages.length || !finite(line.duration) || line.duration <= 0) bad();
+      let previous = 0;
+      const exact = pages.map((pg, idx) => {
+        const timed = line.pages[idx];
+        if (!timed || !finite(timed.start) || !finite(timed.end) || timed.start !== previous || timed.end <= timed.start || !Array.isArray(timed.cues) || timed.cues.length !== pg.cues.length) bad();
+        let cueStart = timed.start;
+        const cues = pg.cues.map((source, ci) => {
+          const cue = timed.cues[ci], text = typeof source === 'string' ? source : source.t;
+          if (!cue || !finite(cue.start) || !finite(cue.end) || cue.start !== cueStart || cue.end <= cue.start || cue.end > timed.end) bad();
+          cueStart = cue.end;
+          return { text, sub: subText(text), start: cue.start, end: cue.end, hold: 0, dur: cue.end - cue.start };
+        });
+        if (cueStart !== timed.end) bad();
+        previous = timed.end;
+        return { ...pg, index: idx, start: timed.start, speechEnd: timed.end, end: timed.end, cues };
+      });
+      if (previous !== line.duration) bad();
+      return { pages: exact, duration: line.duration, gap: 0 };
+    }
     const voice = opts.voice || null;
     const V = { ...VOICE, ...(opts.pace || {}) };   // META.pace: { maxHold, gap } loosens a voiced film's pauses (tight by default)
     const gap = voice ? V.gap : opts.gap ?? GAP;

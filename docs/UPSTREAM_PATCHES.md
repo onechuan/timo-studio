@@ -14,3 +14,8 @@ repair benchmark projects that fail in the Frametell `0.8.0` source checkout:
 `tests/drawing-engine-inventory.test.ts` rejects every unlisted upstream
 divergence. The engine's own benchmark suite verifies these patches in a real
 browser.
+
+TimoTV also adds one isolated runtime extension in `runtime/timing.js`: when a
+trusted `META.timeline` is present, the engine uses its measured page and cue
+seconds exactly. Without that option the original Frametell estimated and
+voice timing paths remain unchanged.
