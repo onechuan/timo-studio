@@ -1,0 +1,14 @@
+/* Whiteboard sketch */
+:root { --ink: #1E2226; --soft: #4B5158; --muted: #8C939B; --band-color: rgba(250, 251, 251, 0.97); }
+#frame { background: #F7F8F7; }
+/* a whiteboard has no warm vignette: only a cool, very light falloff where the board meets its frame */
+#vignette { background: radial-gradient(ellipse 82% 78% at 50% 46%, transparent 64%, rgba(60, 70, 80, 0.09) 100%); }
+.chrome::before { background: linear-gradient(to bottom, rgba(250, 251, 251, 1) 0%, rgba(250, 251, 251, 0.96) 55%, rgba(250, 251, 251, 0) 100%); }
+.ch-left b { color: #6A7077; }
+.ch-left .ch-no { color: #D0342C; }
+.ch-left em { border-left-color: #D5D9DD; }
+.code { color: #2A2E33; }
+.code .kw { color: #1F5DBA; } .code .str { color: #1E8A4A; } .code .num { color: #E5762A; } .code .fn { color: #8A3F7E; } .code .cm { color: #8C939B; }
+/* subtitles: black marker on a white card with a thin grey edge, like a sticky label on the board */
+.subs span { color: #1E2226; background: rgba(255, 255, 255, 0.94); border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(40, 50, 60, 0.10), inset 0 0 0 1.5px rgba(120, 130, 140, 0.22); }

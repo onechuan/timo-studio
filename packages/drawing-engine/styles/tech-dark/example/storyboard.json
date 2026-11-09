@@ -1,0 +1,30 @@
+{
+  "title": "缓存：为什么第二次打开更快",
+  "summary": "第一次请求回源要 120 ms，缓存存下副本后第二次 5 ms 返回；副本按 max-age 过期，过期后重新回源。",
+  "durationSec": 60,
+  "style": "tech-dark",
+  "palette": "tech-dark/default",
+  "cast": "none",
+  "pages": [
+    { "id": "p01", "section": "开场：一来一回 120 ms", "say": "打开网页，请求跑到很远的源站，一来一回一百二十毫秒。", "core": true, "beats": [
+      { "at": "c0", "object": "浏览器窗口和远处的源站机柜", "action": "两端的方框描出来，中间拉出一条长虚线", "camera": "固定", "text": "浏览器 / 源站" },
+      { "at": "c1", "object": "一个青色请求块", "action": "沿虚线从浏览器滑到源站，再滑回来", "camera": "固定", "text": "" },
+      { "at": "c2:一百二十毫秒", "object": "虚线上方的计时器", "action": "数字跟着请求块滚动，落定在 120 ms", "camera": "推近", "text": "120 ms" } ] },
+    { "id": "p02", "section": "未命中：先回源", "say": "中间放一个缓存，第一次没命中还是要去源站，回来时存一份副本。", "core": true, "beats": [
+      { "at": "c0", "object": "中间的缓存节点", "action": "在虚线中段描出一个方框，里面空着四个格子", "camera": "固定", "text": "cache" },
+      { "at": "c1", "object": "请求块", "action": "撞进缓存，缓存边上闪出红色 MISS，请求块穿过去奔向源站", "camera": "推近", "text": "MISS" },
+      { "at": "c2", "object": "响应块", "action": "从源站滑回来，在缓存里落下一份副本，再继续滑回浏览器", "camera": "固定", "text": "" } ] },
+    { "id": "p03", "section": "命中：5 ms", "say": "第二次请求同一个页面，缓存里已经有了，五毫秒返回。", "core": true, "beats": [
+      { "at": "c0", "object": "第二个请求块", "action": "从浏览器出发滑向缓存", "camera": "固定", "text": "" },
+      { "at": "c1", "object": "缓存里的副本格", "action": "亮起青色，边上跳出绿色 HIT，请求块在缓存处折返", "camera": "推近", "text": "HIT" },
+      { "at": "c2:五毫秒", "object": "计时器", "action": "只滚到 5 ms 就停住，旁边的 120 ms 变暗", "camera": "固定", "text": "5 ms" } ] },
+    { "id": "p04", "section": "过期：重新回源", "say": "副本有存活时间，响应头里写三千六百秒，到期后重新回源。", "beats": [
+      { "at": "c0", "object": "缓存里的副本格", "action": "下方长出一条青色寿命条", "camera": "固定", "text": "TTL" },
+      { "at": "c1:三千六百秒", "object": "一张响应头代码卡", "action": "逐行打出，max-age 那一行被高亮", "camera": "推近", "text": "max-age=3600" },
+      { "at": "c2", "object": "寿命条", "action": "缩到零，副本格变灰，下一个请求块穿过缓存奔向源站", "camera": "固定", "text": "" } ] },
+    { "id": "p05", "section": "收束：源站只接少数请求", "say": "一百个请求里，大部分在缓存折返，源站只处理剩下几个。", "beats": [
+      { "at": "c0", "object": "一串请求块", "action": "从浏览器一个接一个连续发出", "camera": "固定", "text": "" },
+      { "at": "c1", "object": "缓存节点", "action": "大部分请求块在这里折返，命中计数一路往上跳", "camera": "推近", "text": "HIT" },
+      { "at": "c2", "object": "源站机柜", "action": "只接到零星几个琥珀色请求块，最后一个请求在缓存折返回到浏览器", "camera": "固定", "text": "" } ] }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "kinds": ["object", "character", "scene"],
+  "max": 6,
+  "quality": "medium",
+  "prefix": "A warm, quiet flat illustration, like a patient finance or psychology explainer for grown-ups: large solid areas of colour, soft rounded shapes, very little outline and clean lines, with a gentle single-tone shadow on one side. The palette is warm and calm: beige and cream grounds, ink-brown lines, terracotta red, mustard yellow, sage green and deep teal, never more than three accents at once. Objects are the metaphors of everyday life drawn simply and solidly: a snowball, a piggy bank, a balance, a sapling, an hourglass, a mountain path, coins. People are calm adult figures drawn in the same flat style, with simple quiet faces (small dot eyes, a hint of a nose and mouth), natural proportions, plain everyday clothes, never chibi or cute. Scenes are quiet warm landscapes and rooms with one central object",
+  "avoid": "No text, letters, numbers, labels, logos, signatures or watermarks. No neon, no glowing gradients, no blue-purple tones, no sketchy scribbles, no photorealism, no 3D render, no cartoon chibi faces."
+}

@@ -1,0 +1,7 @@
+/* Warm story illustration */
+:root { --ink: #3A2E28; --soft: #6B5A4E; --muted: #A08E7E; --band-color: rgba(247, 236, 219, 0.97); }
+#frame { background: #F4E7D3; }
+#vignette { background: radial-gradient(ellipse 80% 75% at 50% 45%, transparent 62%, rgba(120, 80, 45, 0.10) 100%); }
+.tx { letter-spacing: 0.02em; }
+.subs span { color: #3A2E28; background: rgba(252, 246, 236, 0.92); border-radius: 18px;
+  box-shadow: 0 2px 16px rgba(110, 75, 40, 0.10), inset 0 0 0 1.5px rgba(170, 135, 100, 0.22); }

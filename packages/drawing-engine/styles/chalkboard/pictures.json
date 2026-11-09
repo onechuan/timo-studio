@@ -1,0 +1,7 @@
+{
+  "kinds": ["object", "character"],
+  "max": 6,
+  "quality": "medium",
+  "prefix": "A chalk drawing as a teacher draws it on a blackboard: soft, slightly shaky chalk lines of a dusty off-white, grainy and broken where the chalk skipped, a little transparent, with chalk dust at the edges. Fills are at most loose side-of-the-chalk strokes or light hatching, never solid. Pastel coloured chalks add a few accents: soft yellow for the key part, pink for a warning, pale blue and pale green. Shapes are clear and simple, the way a good teacher sketches a diagram, a planet, a machine, an animal. People are chalk-sketched figures with real faces (eyes, brows, nose and mouth in a few chalk strokes, hair, clothes and hands), believable and lively, never stick figures. Everything is light chalk on a dark board: only pale chalk colours, nothing dark, no dark clothes or dark masses, and most of the board shows through between the strokes",
+  "avoid": "No text, letters, numbers, labels, logos, signatures or watermarks. No board, no green or black background, no solid fills, no glowing outlines, no neon, no gradients, no photorealism, no 3D render, no thick black lines."
+}

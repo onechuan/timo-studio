@@ -1,0 +1,20 @@
+/* Chalkboard */
+:root { --ink: #F1ECE1; --soft: #CBC6BA; --muted: #929A92; --band-color: rgba(34, 46, 41, 0.97); }
+#frame { background: #223029; color: var(--ink); }
+#vignette { background: radial-gradient(ellipse 78% 72% at 50% 46%, transparent 55%, rgba(8, 12, 10, 0.42) 100%); }
+/* chalk: strokes are a little translucent and grainy; fills stay solid so boxes still separate from the board */
+svg.ink { filter: url(#chalk); }
+svg.ink path[fill="none"] { stroke-opacity: 0.9; }
+/* the highlighter becomes a soft chalk smear: low enough that chalk-white text on top stays readable */
+svg.ink g.mark path { opacity: 0.26; }
+.tx { text-shadow: 0 0 1.5px rgba(241, 236, 225, 0.28); }
+.chrome::before { background: linear-gradient(to bottom, rgba(34, 46, 41, 1) 0%, rgba(34, 46, 41, 0.95) 55%, rgba(34, 46, 41, 0) 100%); }
+.ch-left { color: #929A92; }
+.ch-left b { color: #B5B9AF; }
+.ch-left .ch-no { color: #F3DD86; }
+.ch-left em { border-left-color: #4A5650; }
+.code { color: #E6E1D6; }
+.code .kw { color: #F0A3A0; } .code .str { color: #A9D49A; } .code .num { color: #F2BE7E; } .code .fn { color: #9CC7E0; } .code .cm { color: #8E968E; }
+/* subtitles: a soft dark pill on the slate, chalk-white letters */
+.subs span { color: #F4F0E6; background: rgba(14, 20, 17, 0.78); border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 0 0 1.5px rgba(241, 236, 225, 0.10); }
