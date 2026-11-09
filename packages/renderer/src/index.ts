@@ -11,3 +11,4 @@ export * from './artwork.js';
 export * from './motion.js';
 export * from './review.js';
 export * from './program.js';
+export * from './program-preview.js';

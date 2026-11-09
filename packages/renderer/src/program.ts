@@ -24,7 +24,6 @@ const runtimeFiles = [
   'runtime/shell3d.js',
   'runtime/three.js',
   'runtime/media.js',
-  'runtime/engine.js',
 ] as const;
 const componentIds = new Set(
   readdirSync(join(engineRoot, 'lib'))
@@ -96,6 +95,9 @@ export function drawingEngineAssets(
     ...runtimeFiles.map((file) => read(file)),
     ...(existsSync(kit) ? [readFileSync(kit, 'utf8')] : []),
     ...ids.map((id) => read('lib', `${id}.js`)),
+    // The engine snapshots Builder.prototype on the first build. Style kits and
+    // optional components must therefore be installed before it is initialized.
+    read('runtime', 'engine.js'),
   ].map(scriptSafe);
   const result = {
     css: styleSafe(
