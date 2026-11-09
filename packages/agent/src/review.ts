@@ -41,8 +41,8 @@ export async function reviewFilmScene(
             (scene.artwork as unknown as { elements?: unknown })?.elements,
           )
         ? (
-            (scene.artwork as unknown as { elements: unknown[] }).elements
-          ).flatMap((element) =>
+            scene.artwork as unknown as { elements: unknown[] }
+          ).elements.flatMap((element) =>
             element &&
             typeof element === 'object' &&
             typeof (element as { id?: unknown }).id === 'string'
@@ -80,7 +80,8 @@ export async function reviewFilmScene(
               style: scene.artwork.style,
               intent: scene.artwork.intent,
               sourceHash: scene.artwork.sourceHash,
-              elementIds: '程序化页面无稳定对象 ID，视觉问题的 elementIds 必须为空数组',
+              elementIds:
+                '程序化页面无稳定对象 ID，视觉问题的 elementIds 必须为空数组',
             }
           : undefined,
       frames: frames.map(({ timeMs, cueId }) => ({ timeMs, cueId })),

@@ -249,10 +249,7 @@ export async function captureSceneReview(
           severity: 'error' as const,
           atMs,
           elementIds: [],
-          what: String(error.message || '页面绘制程序构建失败。').slice(
-            0,
-            600,
-          ),
+          what: String(error.message || '页面绘制程序构建失败。').slice(0, 600),
           fix: '修复页面绘制错误后重新审片。',
         })),
       );
@@ -264,24 +261,28 @@ export async function captureSceneReview(
       atMs = time;
       // Catch only deterministic page code failures. Browser transport, cancellation,
       // screenshots and filesystem failures retain their original rejection semantics.
-      const renderResult = await page.evaluate(({ time, sceneId }) => {
-        try {
-          (window as any).renderAt(time);
-          return {
-            thrown: null,
-            engine: ((window as any).ENGINE?.errors ?? []).filter(
-              (error: { page?: string }) => error.page === sceneId,
-            ),
-          };
-        } catch (error) {
-          return {
-            thrown: (
-              error instanceof Error ? error.message : String(error)
-            ).slice(0, 600),
-            engine: [],
-          };
-        }
-      }, { time, sceneId: s.id });
+      const renderResult = await page.evaluate(
+        ({ time, sceneId }) => {
+          try {
+            (window as any).renderAt(time);
+            return {
+              thrown: null,
+              engine: ((window as any).ENGINE?.errors ?? []).filter(
+                (error: { page?: string }) => error.page === sceneId,
+              ),
+            };
+          } catch (error) {
+            return {
+              thrown: (error instanceof Error
+                ? error.message
+                : String(error)
+              ).slice(0, 600),
+              engine: [],
+            };
+          }
+        },
+        { time, sceneId: s.id },
+      );
       const runtimeError =
         renderResult.thrown || renderResult.engine[0]?.message || null;
       if (runtimeError !== null) {
@@ -297,16 +298,15 @@ export async function captureSceneReview(
       }
       const measured = await page.evaluate(measureReviewFrame, {
         atMs: time,
-        decorativeIds:
-          (isLegacyArtwork(s.artwork) ? s.artwork.elements : [])
-            .filter(
-              (e) =>
-                e.type === 'group' ||
-                (e.type === 'rect' &&
-                  (e.fill === 'paper' || e.fill === 'panel') &&
-                  e.width * e.height >= 100000),
-            )
-            .map((e) => e.id),
+        decorativeIds: (isLegacyArtwork(s.artwork) ? s.artwork.elements : [])
+          .filter(
+            (e) =>
+              e.type === 'group' ||
+              (e.type === 'rect' &&
+                (e.fill === 'paper' || e.fill === 'panel') &&
+                e.width * e.height >= 100000),
+          )
+          .map((e) => e.id),
       });
       for (const issue of measured) {
         const key = JSON.stringify([issue.what, issue.elementIds]);

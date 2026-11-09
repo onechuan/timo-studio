@@ -1,5 +1,12 @@
 import { expect, it } from 'vitest';
-import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Production } from '../../packages/contracts/src/index.js';
@@ -93,9 +100,7 @@ it.skipIf(process.env.RUN_INTEGRATION !== '1')(
       expect(rendered.artifacts.preview).toBe(
         'production/v3-video/r1/preview.html',
       );
-      expect(rendered.artifacts.video).toBe(
-        'production/v3-video/r1/video.mp4',
-      );
+      expect(rendered.artifacts.video).toBe('production/v3-video/r1/video.mp4');
     } finally {
       await rm(root, { recursive: true, force: true });
     }

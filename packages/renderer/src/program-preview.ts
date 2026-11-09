@@ -10,7 +10,8 @@ import {
 } from './program.js';
 
 const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
-const inlineScript = (source: string) => source.replace(/<\/script/gi, '<\\/script');
+const inlineScript = (source: string) =>
+  source.replace(/<\/script/gi, '<\\/script');
 
 export function programFilmHtml(
   p: Production,
@@ -29,7 +30,9 @@ export function programFilmHtml(
       throw new Error(`Drawing program hash mismatch: ${scene.id}`);
   }
 
-  const extras = [...new Set(programs.flatMap(({ artwork }) => artwork.extras))];
+  const extras = [
+    ...new Set(programs.flatMap(({ artwork }) => artwork.extras)),
+  ];
   const assets = drawingEngineAssets(style, extras);
   const portrait = p.aspectRatio === '9:16';
   const stage = portrait

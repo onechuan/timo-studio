@@ -27,7 +27,10 @@ const styleMap: Record<Production['brief']['style'], DrawingStyle> = {
 };
 
 const prompt = () =>
-  readFileSync(new URL('../../prompts/PAGE_PROGRAM.md', import.meta.url), 'utf8');
+  readFileSync(
+    new URL('../../prompts/PAGE_PROGRAM.md', import.meta.url),
+    'utf8',
+  );
 const visualStyle = (p: Production) =>
   readFileSync(
     new URL(`../../skills/visual-styles/${p.brief.style}.md`, import.meta.url),
@@ -45,7 +48,9 @@ export async function illustrateFilmSceneProgram(
   if (
     !scene ||
     !scene.cues.length ||
-    scene.cues.some((cue) => cue.startMs === undefined || cue.endMs === undefined)
+    scene.cues.some(
+      (cue) => cue.startMs === undefined || cue.endMs === undefined,
+    )
   )
     throw new Error('绘图需要已完成配音的逐句时间');
   const style = drawingStyleSchema.parse(styleMap[p.brief.style]);

@@ -118,9 +118,7 @@ it.skipIf(
           title: '拆开假设',
           visual: '旧画面',
           beats: ['假设'],
-          cues: [
-            { id: 'q1', text: '拆开假设。', startMs: 0, endMs: 1000 },
-          ],
+          cues: [{ id: 'q1', text: '拆开假设。', startMs: 0, endMs: 1000 }],
           artwork: {
             version: 1,
             intent: '一个假设框',
@@ -174,13 +172,13 @@ it.skipIf(
       await page.setContent(filmHtml(production, { controls: false }));
       await page.evaluate(() => (window as any).__ready);
       await page.evaluate(() => (window as any).renderAt(500));
-      expect(
-        await page.locator('[data-artwork-id="assumption"]').count(),
-      ).toBe(1);
-      await page.evaluate(() => (window as any).renderAt(1500));
-      expect(await page.locator('#stage').getByText('事实').count()).toBeGreaterThan(
-        0,
+      expect(await page.locator('[data-artwork-id="assumption"]').count()).toBe(
+        1,
       );
+      await page.evaluate(() => (window as any).renderAt(1500));
+      expect(
+        await page.locator('#stage').getByText('事实').count(),
+      ).toBeGreaterThan(0);
       expect(await page.evaluate(() => (window as any).ENGINE.errors)).toEqual(
         [],
       );

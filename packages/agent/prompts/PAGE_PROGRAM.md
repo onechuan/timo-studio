@@ -8,6 +8,7 @@ source 必须且只能注册当前场景：`TIMO.visual('sceneId', (P) => { ... 
 时间使用引擎提供的页内秒数：`P.c(i)` 是第 i 句开始（例如 `const t0=P.c(0)`），`P.ce(i)` 是该句结束，`P.cw(i,'口播中实际存在的词')` 是该词说出的时刻，`P.endT` 是本页结束。不另造时间表，不把全片毫秒直接写入 source。
 
 可靠的基础 API：
+
 - `P.title(text,{accent})`
 - `P.text(text,{x,y,w,align:'l|c|r',size,color,weight,at,cps,mode})`
 - `P.box(x,y,w,h,{at,dur,color,fill,r,sw})`、`P.circle(cx,cy,r,{...})`、`P.ellipse(cx,cy,rx,ry,{...})`

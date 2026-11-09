@@ -76,8 +76,7 @@ export function assertSafeProgramSource(sceneId: string, source: string): void {
     )
   )
     unsafe();
-  if ((source.match(/\bTIMO\s*\.\s*visual\s*\(/g) ?? []).length !== 1)
-    unsafe();
+  if ((source.match(/\bTIMO\s*\.\s*visual\s*\(/g) ?? []).length !== 1) unsafe();
   const escaped = sceneId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (
     !new RegExp(

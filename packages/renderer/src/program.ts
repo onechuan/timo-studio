@@ -2,10 +2,7 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import {
-  drawingStyleSchema,
-  type DrawingStyle,
-} from '@timotv/contracts';
+import { drawingStyleSchema, type DrawingStyle } from '@timotv/contracts';
 
 const require = createRequire(import.meta.url);
 const engineRoot = dirname(
@@ -40,7 +37,8 @@ export interface DrawingEngineAssets {
 const scriptSafe = (source: string) =>
   source.replace(/<\/script/gi, '<\\/script');
 const styleSafe = (source: string) => source.replace(/<\/style/gi, '<\\/style');
-const read = (...parts: string[]) => readFileSync(join(engineRoot, ...parts), 'utf8');
+const read = (...parts: string[]) =>
+  readFileSync(join(engineRoot, ...parts), 'utf8');
 
 export function hashProgramSource(source: string): string {
   return createHash('sha256').update(source, 'utf8').digest('hex');
