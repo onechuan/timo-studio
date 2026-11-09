@@ -1,5 +1,5 @@
 ENGINE.visual('p03', (P) => {
-  P.vars({ x: 'blue', '\\eta': 'green', "f'(x)": 'yellow' });
+  P.vars({ x: 'blue', y: 'yellow', '\\eta': 'green', "f'(x)": 'yellow' });
   P.title('Step against the slope', { at: -5, dur: 0.01 });
 
   const f = (x) => x * x;

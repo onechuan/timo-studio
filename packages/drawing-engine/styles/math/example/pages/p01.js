@@ -1,5 +1,5 @@
 ENGINE.visual('p01', (P) => {
-  P.vars({ x: 'blue', f: 'yellow' });
+  P.vars({ x: 'blue', y: 'yellow', f: 'yellow' });
   P.title('Finding the bottom blind');
 
   // the stage: a plane, created at once

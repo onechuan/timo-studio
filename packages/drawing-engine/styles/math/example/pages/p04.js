@@ -1,5 +1,5 @@
 ENGINE.visual('p04', (P) => {
-  P.vars({ x: 'blue', f: 'yellow' });
+  P.vars({ x: 'blue', y: 'yellow', f: 'yellow' });
   const f = (x) => x * x;
   const E = PV.ease.inOut;
 
@@ -76,7 +76,7 @@ ENGINE.visual('p04', (P) => {
   // zoom on the vertex as it stops, then the whole again
   const [vx, vy] = A.p(0, 0);
   P.cam([
-    { at: tStop - 0.3, x: vx, y: vy - 120, s: 1.6, dur: 0.9, ease: 'inOut' },
+    { at: tStop - 0.3, x: vx, y: vy - 220, s: 1.1, dur: 0.9, ease: 'inOut' },
     { at: P.endT - 1.0, x: 960, y: 540, s: 1, dur: 0.9, ease: 'inOut' },
   ]);
 });

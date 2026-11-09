@@ -79,7 +79,7 @@
       "beats": [
         { "at": "c0:small", "object": "the step-size readout η beside the parabola", "action": "ticks back down from 1.1 to 0.1, the zigzag fades to muted", "camera": "fixed", "text": "η = 0.1" },
         { "at": "c1:bottom", "object": "the blue dot", "action": "rolls from x = 3 down the curve in shrinking steps to the vertex", "camera": "fixed", "text": "x = 0" },
-        { "at": "c2:against", "object": "the update rule x ← x − η·f'(x)", "action": "is boxed with a blue surround and held", "camera": "fixed", "text": "x ← x − η f'(x)" }
+        { "at": "c2:against", "object": "the blue dot at the vertex", "action": "settles at the bottom while the final shrinking footprints finish behind it", "camera": "push in on the resting dot", "text": "" }
       ]
     }
   ]

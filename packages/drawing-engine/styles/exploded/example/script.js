@@ -14,7 +14,7 @@
     name: '喷气发动机怎么把空气变成推力：风扇、压气机、燃烧',      // file name prefix of the rendered film
     libs: [],               // third-party libraries (paths under engine_modules, .css or UMD .js), e.g. 'katex/dist/katex.min.js'
     gap: 0.8,               // pause between pages (s); the engine's default is 1.5
-    extras: ["../kit.js"],             // this project's own component files (relative to this folder), loaded before the pages
+    extras: ["engine/styles/exploded/kit.js"],             // this project's own component files (relative to this folder), loaded before the pages
     publish: {              // publishing notes (npm run publish → out/发布信息.md); chapters = the PAGES sections below, timecodes computed
       titles: {
         bilibili: '',       // ≤ 80 characters

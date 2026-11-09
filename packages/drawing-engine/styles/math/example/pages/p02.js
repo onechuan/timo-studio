@@ -1,5 +1,5 @@
 ENGINE.visual('p02', (P) => {
-  P.vars({ x: 'blue' });
+  P.vars({ x: 'blue', y: 'yellow' });
 
   const f = (x) => x * x;
   // the valley, carried over: plane, curve and the dot at x = 3

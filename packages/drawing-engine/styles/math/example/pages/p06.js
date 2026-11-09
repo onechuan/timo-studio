@@ -1,5 +1,5 @@
 ENGINE.visual('p06', (P) => {
-  P.vars({ x: 'blue', f: 'yellow' });
+  P.vars({ x: 'blue', y: 'yellow', f: 'yellow' });
   P.title('Small steps reach the bottom', { at: -10 });
 
   // carried over: the plane and the valley f(x) = x^2

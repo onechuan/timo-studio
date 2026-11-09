@@ -18,7 +18,7 @@ ENGINE.visual('p04', (P) => {
   });
 
   // gallery label beside the drawing, on bare paper
-  P.caption('Rubin, 1915\nfaces, or a vase', 1360, 470, {
+  P.caption('Rubin, 1915\nfaces, or a vase', 1140, 470, {
     size: 50,
     at: P.cw(1, 'Rubin', 0.3),
   });

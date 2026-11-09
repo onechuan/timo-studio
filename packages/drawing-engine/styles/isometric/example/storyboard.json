@@ -1,0 +1,22 @@
+{
+  "title": "一个包裹的旅程",
+  "summary": "包裹从仓库出发，经过传送带、分拣中心和货车，最后送到家门口。",
+  "durationSec": 30,
+  "lang": "zh",
+  "style": "isometric",
+  "cast": "backs and silhouettes only",
+  "pages": [
+    {
+      "id": "p01",
+      "section": "从仓库到家门口",
+      "say": "下单后，包裹从仓库进入传送带，经过分拣和运输，最后由快递员送到家门口。",
+      "core": true,
+      "beats": [
+        { "at": "c0", "object": "等距仓库", "action": "从地面升起并打开出货门", "camera": "推近仓库", "text": "仓库" },
+        { "at": "c1", "object": "一排包裹", "action": "沿传送带流向分拣中心", "camera": "跟随包裹横移", "text": "分拣中心" },
+        { "at": "c2", "object": "运货卡车", "action": "载着包裹沿道路驶向城市", "camera": "拉回展示路线", "text": "" },
+        { "at": "c3", "object": "快递员背影和包裹", "action": "沿最后一段小路走到房门前并放下包裹", "camera": "推近家门口", "text": "你家" }
+      ]
+    }
+  ]
+}

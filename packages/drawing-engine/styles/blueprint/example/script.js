@@ -1,6 +1,6 @@
 /* Blueprint · benchmark film: gears, an exploded pen, a pipe leak. Drawn to styles/blueprint/GRAMMAR.md; also this style's regression test. */
 (function (root) {
-  const META = { style: 'blueprint', title: '齿轮为什么能省力', name: 'GEARS', lang: 'zh', gap: 0.6, extras: ['../kit.js'] };
+  const META = { style: 'blueprint', title: '齿轮为什么能省力', name: 'GEARS', lang: 'zh', gap: 0.6, extras: ['engine/styles/blueprint/kit.js'] };
   const PAGES = [
     { id: 'p01', section: '传动比', title: '大齿轮带小齿轮', cues: [
       '左边这个大齿轮，有三十六个齿。',
