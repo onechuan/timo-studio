@@ -41,24 +41,17 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
           beats: ['种子', '萌芽'],
         };
         return {
-          value: system.includes('手绘动画导演')
+          value: system.includes('程序动画导演')
             ? {
                 sceneId: JSON.parse(user).sceneId,
                 artwork: {
-                  version: 1,
+                  version: 3,
+                  runtime: 'timotv-dsl-1',
                   intent: '一棵大树展示生长',
-                  elements: [
-                    {
-                      id: 'tree',
-                      type: 'illustration',
-                      name: 'tree',
-                      x: 500,
-                      y: 220,
-                      width: 400,
-                      height: 450,
-                      cueIndex: 0,
-                    },
-                  ],
+                  source:
+                    "TIMO.visual('p01', P => { P.title('种子成长'); P.tree(960, 760, 420, { at: P.c(0) }); });",
+                  style: 'warm-story',
+                  extras: ['warm'],
                 },
               }
             : system.includes('口播编剧')
@@ -154,9 +147,11 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
       expect(generatedPrompts[0]).toContain('## 分镜参考');
       expect(generatedPrompts[1]).toContain('# 科普口播');
       expect(generatedPrompts[1]).toContain('## 口播参考');
-      if (!isLegacyArtwork(doc.scenes[0].artwork))
-        throw new Error('Expected legacy artwork');
-      expect(doc.scenes[0].artwork.elements[0].type).toBe('illustration');
+      expect(isLegacyArtwork(doc.scenes[0].artwork)).toBe(false);
+      expect(doc.scenes[0].artwork).toMatchObject({
+        version: 3,
+        style: 'warm-story',
+      });
       expect(doc.durationMs).toBeGreaterThan(500);
       expect(
         (await stat(join(root, doc.artifacts.audio!))).size,

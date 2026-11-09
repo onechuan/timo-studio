@@ -20,6 +20,7 @@ import {
   scriptScenesSchema,
   type Production,
 } from '@timotv/contracts';
+export { illustrateFilmSceneProgram } from './program.js';
 type GeneratedJson = {
   value: unknown;
   usage: { input: number; output: number };
