@@ -28,6 +28,36 @@ export async function reviewFilmScene(
   const scene = p.scenes[index];
   if (!scene || !frames.length) throw new Error('REVIEW_IMAGES_REQUIRED');
   const legacy = isLegacyArtwork(scene.artwork) ? scene.artwork : undefined;
+  // Read-only compatibility for reports persisted before artwork versions were
+  // introduced. V3 never exposes source-level object IDs to the vision model.
+  const reviewElements = legacy
+    ? legacy.elements.map((element) => ({
+        id: element.id,
+        type: element.type,
+      }))
+    : scene.artwork?.version === 3
+      ? []
+      : Array.isArray(
+            (scene.artwork as unknown as { elements?: unknown })?.elements,
+          )
+        ? (
+            (scene.artwork as unknown as { elements: unknown[] }).elements
+          ).flatMap((element) =>
+            element &&
+            typeof element === 'object' &&
+            typeof (element as { id?: unknown }).id === 'string'
+              ? [
+                  {
+                    id: (element as { id: string }).id,
+                    type:
+                      typeof (element as { type?: unknown }).type === 'string'
+                        ? (element as { type: string }).type
+                        : 'legacy',
+                  },
+                ]
+              : [],
+          )
+        : [];
   const result = await model.generate(
     system,
     JSON.stringify({
@@ -43,10 +73,7 @@ export async function reviewFilmScene(
       })),
       style: p.brief.style,
       aspectRatio: p.aspectRatio,
-      elements: legacy?.elements.map((e) => ({
-        id: e.id,
-        type: e.type,
-      })),
+      elements: reviewElements,
       drawingProgram:
         scene.artwork?.version === 3
           ? {
@@ -65,7 +92,7 @@ export async function reviewFilmScene(
     signal,
   );
   const parsed = visualVerdictSchema.safeParse(result.value);
-  const ids = new Set(legacy?.elements.map((e) => e.id));
+  const ids = new Set(reviewElements.map((element) => element.id));
   if (
     !parsed.success ||
     parsed.data.issues.some(
