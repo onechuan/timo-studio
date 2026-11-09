@@ -13,7 +13,7 @@ import { filmHtml, validateFilmTiming } from './preview.js';
 import { measureReviewFrame } from './browser-measure.js';
 
 /** Bump whenever deterministic rendering or measurement semantics change. */
-export const REVIEW_ENGINE_VERSION = 'animation-review-2.2';
+export const REVIEW_ENGINE_VERSION = 'animation-review-3.0';
 function stable(value: unknown): string {
   if (value === undefined) return 'null';
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
@@ -233,32 +233,64 @@ export async function captureSceneReview(
     );
     await page.setContent(filmHtml(p, { controls: false }));
     await page.evaluate(async () => {
-      await document.fonts.ready;
+      await ((window as any).__ready ?? document.fonts.ready);
     });
+    const buildErrors = await page.evaluate(
+      (sceneId) =>
+        ((window as any).ENGINE?.errors ?? []).filter(
+          (error: { page?: string }) => error.page === sceneId,
+        ),
+      s.id,
+    );
+    if (buildErrors.length) {
+      issues.push(
+        ...buildErrors.map((error: { message?: string }) => ({
+          kind: 'runtime' as const,
+          severity: 'error' as const,
+          atMs,
+          elementIds: [],
+          what: String(error.message || '页面绘制程序构建失败。').slice(
+            0,
+            600,
+          ),
+          fix: '修复页面绘制错误后重新审片。',
+        })),
+      );
+      return { frames, issues, omittedCueIds: plan.omittedCueIds };
+    }
     const seen = new Set<string>();
     for (const time of geometryTimes(s, plan.times)) {
       signal?.throwIfAborted();
       atMs = time;
       // Catch only deterministic page code failures. Browser transport, cancellation,
       // screenshots and filesystem failures retain their original rejection semantics.
-      const renderError = await page.evaluate((t) => {
+      const renderResult = await page.evaluate(({ time, sceneId }) => {
         try {
-          (window as any).renderAt(t);
-          return null;
+          (window as any).renderAt(time);
+          return {
+            thrown: null,
+            engine: ((window as any).ENGINE?.errors ?? []).filter(
+              (error: { page?: string }) => error.page === sceneId,
+            ),
+          };
         } catch (error) {
-          return (error instanceof Error ? error.message : String(error)).slice(
-            0,
-            600,
-          );
+          return {
+            thrown: (
+              error instanceof Error ? error.message : String(error)
+            ).slice(0, 600),
+            engine: [],
+          };
         }
-      }, time);
-      if (renderError !== null) {
+      }, { time, sceneId: s.id });
+      const runtimeError =
+        renderResult.thrown || renderResult.engine[0]?.message || null;
+      if (runtimeError !== null) {
         issues.push({
           kind: 'runtime',
           severity: 'error',
           atMs: time,
           elementIds: [],
-          what: renderError || '页面渲染失败。',
+          what: runtimeError || '页面渲染失败。',
           fix: '修复页面渲染错误后重新审片。',
         });
         break;
