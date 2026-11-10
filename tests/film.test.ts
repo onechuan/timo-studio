@@ -185,7 +185,31 @@ it.skipIf(
       const first = await page.screenshot();
       await page.evaluate(() => (window as any).renderAt(50));
       await page.evaluate(() => (window as any).renderAt(1500));
-      expect(await page.screenshot()).toEqual(first);
+      const second = await page.screenshot();
+      const { PNG } = require('playwright-core/lib/utilsBundle') as {
+        PNG: {
+          sync: { read: (value: Buffer) => { data: Buffer } };
+        };
+      };
+      const [left, right] = [first, second].map(
+        (value) => PNG.sync.read(value).data,
+      );
+      let changedPixels = 0;
+      let maxChannelDelta = 0;
+      for (let i = 0; i < left.length; i += 4) {
+        let pixelDelta = 0;
+        for (let channel = 0; channel < 4; channel++)
+          pixelDelta = Math.max(
+            pixelDelta,
+            Math.abs(left[i + channel]! - right[i + channel]!),
+          );
+        if (pixelDelta) changedPixels++;
+        maxChannelDelta = Math.max(maxChannelDelta, pixelDelta);
+      }
+      // Chrome may rerasterize seeded SVG turbulence by one or two color
+      // levels. Structural seek instability changes larger deltas or regions.
+      expect(maxChannelDelta).toBeLessThanOrEqual(2);
+      expect(changedPixels / (left.length / 4)).toBeLessThan(0.05);
     } finally {
       await browser.close();
     }
