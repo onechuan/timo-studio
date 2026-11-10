@@ -5,6 +5,7 @@ import {
   sceneArtworkSchema,
 } from './artwork.js';
 import type { SceneReview } from './review.js';
+import type { ProductionFailure } from './production-failure.js';
 const text = z.string().trim().min(1);
 const id = text.max(80).regex(/^[a-zA-Z0-9_-]+$/);
 export const contentTypeSchema = z.enum(['general', 'explainer', 'product']);
@@ -125,6 +126,7 @@ export interface Production {
     video?: string;
   };
   jobId?: string;
+  failure?: ProductionFailure;
   error?: string;
   failedAction?: 'plan' | 'produce' | 'illustrate' | 'export';
   reviewTask?: { sceneId: string; mode: 'review' | 'repair' | 'illustrate' };

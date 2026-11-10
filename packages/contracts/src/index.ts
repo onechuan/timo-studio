@@ -4,3 +4,5 @@ export * from './timeline.js';
 export * from './job.js';
 export * from './storyboard.js';
 export * from './events.js';
+
+export * from './production-failure.js';
