@@ -2,6 +2,7 @@ name: timotv
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: timotv
       POSTGRES_PASSWORD: timotv
@@ -15,6 +16,7 @@ services:
       retries: 30
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     command:
       [
         'redis-server',
