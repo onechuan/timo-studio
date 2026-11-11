@@ -439,6 +439,23 @@ export const filmKitComponentResultSchema = z
         message: 'Film Kit 组件源码与哈希必须同时存在',
       });
   });
+export const filmKitReviewFrameSchema = z
+  .object({
+    key: z.string().trim().min(1).max(500),
+    timeMs: z.number().int().nonnegative(),
+    cueId: filmKitNameSchema.optional(),
+  })
+  .strict();
+export const filmKitReviewIssueSchema = z
+  .object({
+    component: filmKitNameSchema.optional(),
+    kind: z.enum(['layout', 'visual', 'runtime']),
+    severity: z.enum(['error', 'warning']),
+    atMs: z.number().int().nonnegative(),
+    what: z.string().trim().min(1).max(600),
+    fix: z.string().trim().min(1).max(1000),
+  })
+  .strict();
 export const filmKitStateSchema = z
   .object({
     status: z.enum([
@@ -455,6 +472,12 @@ export const filmKitStateSchema = z
       .regex(/^[a-f0-9]{64}$/)
       .optional(),
     components: z.array(filmKitComponentResultSchema).min(1).max(3),
+    fingerprint: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    frames: z.array(filmKitReviewFrameSchema).max(6).optional(),
+    issues: z.array(filmKitReviewIssueSchema).max(12).optional(),
     error: z.string().trim().min(1).max(1000).optional(),
   })
   .strict()
@@ -492,6 +515,8 @@ export type FilmKitComponentResult = z.infer<
   typeof filmKitComponentResultSchema
 >;
 export type FilmKitState = z.infer<typeof filmKitStateSchema>;
+export type FilmKitReviewFrame = z.infer<typeof filmKitReviewFrameSchema>;
+export type FilmKitReviewIssue = z.infer<typeof filmKitReviewIssueSchema>;
 export type MotionTrack = z.infer<typeof motionTrackSchema>;
 export interface MotionCue {
   id: string;

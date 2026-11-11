@@ -12,3 +12,4 @@ export * from './motion.js';
 export * from './review.js';
 export * from './program.js';
 export * from './program-preview.js';
+export * from './film-kit-review.js';

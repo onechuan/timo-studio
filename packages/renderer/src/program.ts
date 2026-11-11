@@ -2,7 +2,11 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { drawingStyleSchema, type DrawingStyle } from '@timotv/contracts';
+import {
+  drawingStyleSchema,
+  type DrawingStyle,
+  type FilmKitState,
+} from '@timotv/contracts';
 
 const require = createRequire(import.meta.url);
 const engineRoot = dirname(
@@ -67,6 +71,40 @@ export function validateProgramSource(sceneId: string, source: string): void {
     ).test(source)
   )
     unsafe();
+}
+
+export function validateFilmKitSource(kit: FilmKitState): string {
+  const source = kit.source;
+  if (
+    !source ||
+    !kit.sourceHash ||
+    hashProgramSource(source) !== kit.sourceHash ||
+    Buffer.byteLength(source, 'utf8') > 300_000 ||
+    /<\/script/i.test(source)
+  )
+    throw new Error('Invalid Film Kit source');
+  const forbidden =
+    /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|Worker|SharedWorker|importScripts|eval|window|document|globalThis|self|parent|top|opener|localStorage|sessionStorage|indexedDB|caches|navigator|location|history|open|postMessage|process|require|module|exports)\b|\bimport\s*\(/i;
+  if (
+    forbidden.test(source) ||
+    /\bFunction\s*\(|__proto__|\bconstructor\b|\bB\s*\[/.test(source) ||
+    /(?:https?|file|data):|\.\.[/\\]/i.test(source)
+  )
+    throw new Error('Invalid Film Kit source');
+  const expected = kit.components
+    .filter((component) => ['checking', 'passed'].includes(component.status))
+    .map((component) => component.name)
+    .sort();
+  const actual = [...source.matchAll(/\bB\.(\w+)\s*=\s*function\b/g)]
+    .map((match) => match[1]!)
+    .sort();
+  if (
+    !source.includes('PV.Builder.prototype') ||
+    expected.length === 0 ||
+    actual.join('|') !== expected.join('|')
+  )
+    throw new Error('Invalid Film Kit source');
+  return source;
 }
 
 export function drawingEngineAssets(
