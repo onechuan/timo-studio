@@ -21,6 +21,7 @@ import {
   type Production,
 } from '@timotv/contracts';
 export * from './film-kit.js';
+export * from './page-lanes.js';
 export { illustrateFilmSceneProgram } from './program.js';
 type GeneratedJson = {
   value: unknown;

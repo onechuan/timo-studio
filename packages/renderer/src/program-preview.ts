@@ -103,9 +103,11 @@ export function programFilmHtml(
   const assetScripts = assets.scripts
     .map((source) => `<script>${source}</script>`)
     .join('');
-  const filmKitScript = p.visual?.filmKit?.source
-    ? `<script>${inlineScript(validateFilmKitSource(p.visual.filmKit))}</script>`
-    : '';
+  const filmKitScript =
+    p.visual?.filmKit?.source &&
+    ['checking', 'passed', 'partial'].includes(p.visual.filmKit.status)
+      ? `<script>${inlineScript(validateFilmKitSource(p.visual.filmKit))}</script>`
+      : '';
   const controlsHtml = controls
     ? playerMarkup(
         p.durationMs!,

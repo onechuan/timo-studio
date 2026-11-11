@@ -14,3 +14,5 @@ description: Generate or repair one measured TimoTV page as a deterministic draw
 每个时间点的结果必须只由时间决定。不使用随机数、定时器、循环播放或外部状态。运动要平静且有解释价值；通常一次只让一个主关系变化。
 
 收到 previousArtwork 时，只学习上一页已建立的主体形象、颜色含义和结果状态，不复制其 sceneId 或整段源码。收到 originalArtwork + feedback 时，依据实际截图证据修正位置、尺寸、层级或时序，不通过删掉核心讲解内容规避问题。
+
+收到 filmKit 时，优先复用其中属于本页的已审片组件，按 usage 示例调用 `P.<组件名>`。组件身份跨页保持一致，页面只安排它的位置、时间和与其他对象的关系；绝不重写组件实现。previousPage 与 standingDirections 共同约束连续性，但当前页的口播和视觉任务仍是唯一内容边界。

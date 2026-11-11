@@ -115,3 +115,77 @@ it('retries unsafe or wrong-style program output without persisting it', async (
   expect(users[1]).toContain('repair');
   expect(users[1]).not.toContain('https://example.com');
 });
+
+it('sends the checked Film Kit, continuity summary, and local cue timing', async () => {
+  const p = production();
+  const firstSource = "TIMO.visual('p01', P => P.title('同一只咖啡杯'));";
+  const kitSource =
+    'PV.Builder.prototype.coffeeCup=function(){};B.coffeeCup=function(){};';
+  p.scenes[0]!.artwork = {
+    version: 3,
+    runtime: 'timotv-dsl-1',
+    intent: '白色咖啡杯放在左侧，橙色代表热量',
+    source: firstSource,
+    sourceHash: createHash('sha256').update(firstSource).digest('hex'),
+    style: 'chalkboard',
+    extras: [],
+  };
+  p.scenes.push({
+    id: 'p02',
+    title: '热量流动',
+    visual: '同一只杯子旁出现热量箭头',
+    beats: ['杯子', '热量'],
+    cues: [{ id: 'q3', text: '热量从杯中散出。', startMs: 2000, endMs: 3000 }],
+  });
+  p.visual = {
+    upstreamRevision: '6145f7e3482628543bd6f2d68fe3b618d366213a',
+    engineRevision: `sha256:${'a'.repeat(64)}`,
+    style: 'chalkboard',
+    filmKit: {
+      status: 'passed',
+      source: kitSource,
+      sourceHash: createHash('sha256').update(kitSource).digest('hex'),
+      components: [
+        {
+          name: 'coffeeCup',
+          what: '同一只白色咖啡杯',
+          pages: ['p01', 'p02'],
+          status: 'passed',
+          source: kitSource,
+          sourceHash: createHash('sha256').update(kitSource).digest('hex'),
+        },
+      ],
+    },
+  };
+  let request: Record<string, any> = {};
+  let system = '';
+  const source =
+    "TIMO.visual('p02', P => { P.coffeeCup(600,500,{at:P.c(0)}); });";
+  await illustrateFilmSceneProgram(p, 1, {
+    generate: async () => ({ value: {}, usage: { input: 0, output: 0 } }),
+    generateStructured: async (receivedSystem, user) => {
+      system = receivedSystem;
+      request = JSON.parse(user);
+      return {
+        value: {
+          sceneId: 'p02',
+          artwork: {
+            version: 3,
+            runtime: 'timotv-dsl-1',
+            intent: '延续上一页的杯子并展示热量流动',
+            source,
+            style: 'chalkboard',
+            extras: [],
+          },
+        },
+        usage: { input: 1, output: 1 },
+      };
+    },
+  });
+
+  expect(request.filmKit.components).toContain('coffeeCup');
+  expect(request.previousPage.sceneId).toBe('p01');
+  expect(request.cues[0].localStartSec).toBe(0);
+  expect(request.standingDirections.engineStyle).toBe('chalkboard');
+  expect(system).toContain('黑板');
+});

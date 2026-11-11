@@ -36,6 +36,14 @@ const visualStyle = (p: Production) =>
     new URL(`../../skills/visual-styles/${p.brief.style}.md`, import.meta.url),
     'utf8',
   );
+const styleGrammar = (style: DrawingStyle) =>
+  readFileSync(
+    new URL(
+      `../../../drawing-engine/styles/${style}/GRAMMAR.md`,
+      import.meta.url,
+    ),
+    'utf8',
+  );
 
 export async function illustrateFilmSceneProgram(
   p: Production,
@@ -54,6 +62,13 @@ export async function illustrateFilmSceneProgram(
   )
     throw new Error('绘图需要已完成配音的逐句时间');
   const style = drawingStyleSchema.parse(styleMap[p.brief.style]);
+  const checkedComponents =
+    p.visual?.filmKit && ['passed', 'partial'].includes(p.visual.filmKit.status)
+      ? p.visual.filmKit.components.filter(
+          (component) =>
+            component.status === 'passed' && component.pages.includes(scene.id),
+        )
+      : [];
   const candidateSchema = z
     .object({
       sceneId: z.literal(scene.id),
@@ -104,6 +119,41 @@ export async function illustrateFilmSceneProgram(
     })),
     aspectRatio: p.aspectRatio,
     engineStyle: style,
+    standingDirections: {
+      filmTitle: p.storyboard?.title ?? p.brief.topic,
+      filmSummary: p.storyboard?.summary,
+      aspectRatio: p.aspectRatio,
+      engineStyle: style,
+      continuity:
+        '延续已经建立的主体外观、颜色含义和空间关系；只有讲解需要时才改变。',
+    },
+    filmKit: {
+      status: p.visual?.filmKit?.status ?? 'none',
+      components: checkedComponents.map((component) => component.name),
+      usage: checkedComponents.map((component) => ({
+        name: component.name,
+        what: component.what,
+        example: component.checkSource,
+      })),
+    },
+    previousPage: (() => {
+      const previousScene = p.scenes[index - 1];
+      const previous = previousScene?.artwork;
+      if (!previousScene || !previous) return undefined;
+      return {
+        sceneId: previousScene.id,
+        title: previousScene.title,
+        visual: previousScene.visual,
+        intent: previous.intent,
+        ...(previous.version === 3
+          ? {
+              style: previous.style,
+              extras: previous.extras,
+              sourceHash: previous.sourceHash,
+            }
+          : {}),
+      };
+    })(),
     previousArtwork: (() => {
       const previous = p.scenes[index - 1]?.artwork;
       return previous?.version === 3
@@ -118,7 +168,7 @@ export async function illustrateFilmSceneProgram(
     })(),
     ...(feedback ? { originalArtwork: scene.artwork, feedback } : {}),
   };
-  const system = `${prompt()}\n\n${loadProgramArtworkSkill()}\n\n${visualStyle(p)}`;
+  const system = `${prompt()}\n\n${loadProgramArtworkSkill()}\n\n${visualStyle(p)}\n\n# 上游画风语法\n${styleGrammar(style)}`;
   let totals = p.usage ?? { input: 0, output: 0 };
   let lastIssues: z.ZodIssue[] = [];
   let repair: string[] = [];

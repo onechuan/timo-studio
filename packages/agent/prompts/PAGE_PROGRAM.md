@@ -5,6 +5,8 @@
 
 source 必须且只能注册当前场景：`TIMO.visual('sceneId', (P) => { ... });`。不得使用 ENGINE、window、document、fetch、import、eval、Function、存储、Worker 或导航 API。不得生成网络 URL、HTML 脚本或外部素材路径。
 
+输入的 filmKit.components 是本页唯一可调用的影片级复用组件。通过 `P.<name>(...)` 调用，并参考 filmKit.usage 的受信任示例；不得重新定义、覆盖或访问 `B`。previousPage 只用于延续主体外观、颜色含义和空间关系，不复制上一页源码。standingDirections 是全片持续约束。
+
 时间使用引擎提供的页内秒数：`P.c(i)` 是第 i 句开始（例如 `const t0=P.c(0)`），`P.ce(i)` 是该句结束，`P.cw(i,'口播中实际存在的词')` 是该词说出的时刻，`P.endT` 是本页结束。不另造时间表，不把全片毫秒直接写入 source。
 
 可靠的基础 API：

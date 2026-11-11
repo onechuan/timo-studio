@@ -73,7 +73,8 @@ export function assertSafeProgramSource(sceneId: string, source: string): void {
   if (
     /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|Worker|SharedWorker|importScripts|eval|Function|window|document|globalThis|self|parent|top|opener|localStorage|sessionStorage|indexedDB|caches|navigator|location|history|open|postMessage|ENGINE|constructor|__proto__|prototype)\b|\bimport\s*\(/i.test(
       source,
-    )
+    ) ||
+    /\bB\s*[.[]/.test(source)
   )
     unsafe();
   if ((source.match(/\bTIMO\s*\.\s*visual\s*\(/g) ?? []).length !== 1) unsafe();

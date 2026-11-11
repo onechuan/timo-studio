@@ -62,6 +62,7 @@ export function validateProgramSource(sceneId: string, source: string): void {
   const forbidden =
     /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|Worker|SharedWorker|importScripts|eval|Function|window|document|globalThis|self|parent|top|opener|localStorage|sessionStorage|indexedDB|caches|navigator|location|history|open|postMessage|ENGINE|constructor|__proto__|prototype)\b|\bimport\s*\(/i;
   if (forbidden.test(source)) unsafe();
+  if (/\bB\s*[.[]/.test(source)) unsafe();
   const registrations = source.match(/\bTIMO\s*\.\s*visual\s*\(/g) ?? [];
   if (registrations.length !== 1) unsafe();
   const escaped = sceneId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -92,7 +93,11 @@ export function validateFilmKitSource(kit: FilmKitState): string {
   )
     throw new Error('Invalid Film Kit source');
   const expected = kit.components
-    .filter((component) => ['checking', 'passed'].includes(component.status))
+    .filter((component) =>
+      kit.status === 'checking'
+        ? ['checking', 'passed'].includes(component.status)
+        : component.status === 'passed',
+    )
     .map((component) => component.name)
     .sort();
   const actual = [...source.matchAll(/\bB\.(\w+)\s*=\s*function\b/g)]

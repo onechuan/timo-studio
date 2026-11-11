@@ -39,6 +39,10 @@ describe('V3 drawing program boundary', () => {
     ],
     ['wrong id', "TIMO.visual('s2', P => P.title('a'))"],
     ['engine escape', "ENGINE.visual('s1', P => P.title('a'))"],
+    [
+      'Film Kit redefinition',
+      "B.coffeeCup=()=>{}; TIMO.visual('s1', P => P.coffeeCup())",
+    ],
   ])('rejects %s access', (_name, source) => {
     expect(() => validateProgramSource('s1', source)).toThrow(
       'Unsafe drawing program',
@@ -54,6 +58,8 @@ describe('V3 drawing program boundary', () => {
       true,
     );
     expect(() => drawingEngineAssets('chalkboard', ['../flowgraph'])).toThrow();
-    expect(() => drawingEngineAssets('chalkboard', ['not-installed'])).toThrow();
+    expect(() =>
+      drawingEngineAssets('chalkboard', ['not-installed']),
+    ).toThrow();
   });
 });
