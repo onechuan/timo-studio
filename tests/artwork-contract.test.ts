@@ -2,6 +2,8 @@ import { expect, it } from 'vitest';
 import { sceneSchema } from '../packages/contracts/src/production.js';
 import {
   drawingStyleIds,
+  filmKitItemSchema,
+  filmKitStateSchema,
   isLegacyArtwork,
   sceneArtworkSchema,
 } from '../packages/contracts/src/artwork.js';
@@ -174,4 +176,31 @@ it('does not apply legacy element cue validation to V3 programs', () => {
       },
     }).success,
   ).toBe(true);
+});
+
+it('accepts a bounded reusable Film Kit and rejects one-page components', () => {
+  expect(
+    filmKitStateSchema.parse({
+      status: 'partial',
+      source:
+        '(function(B){ B.coffeeCup = function(){}; })(PV.Builder.prototype);',
+      sourceHash: 'b'.repeat(64),
+      components: [
+        {
+          name: 'coffeeCup',
+          what: '同一只白色陶瓷咖啡杯',
+          pages: ['p01', 'p03'],
+          status: 'passed',
+        },
+      ],
+    }).components[0],
+  ).toMatchObject({ name: 'coffeeCup', status: 'passed' });
+
+  expect(
+    filmKitItemSchema.safeParse({
+      name: 'coffeeCup',
+      what: '同一只白色陶瓷咖啡杯',
+      pages: ['p01'],
+    }).success,
+  ).toBe(false);
 });

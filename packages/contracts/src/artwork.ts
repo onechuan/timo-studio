@@ -383,11 +383,101 @@ export const sceneProgramV3Schema = z
       ),
     sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
     style: drawingStyleSchema,
-    extras: z
-      .array(z.string().regex(/^[a-z0-9][a-z0-9-]{0,79}$/))
-      .max(32),
+    extras: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]{0,79}$/)).max(32),
   })
   .strict();
+const filmKitNameSchema = z.string().regex(/^[a-z][A-Za-z0-9]{1,23}$/);
+const filmKitPageIdSchema = z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/);
+const filmKitSourceSchema = z
+  .string()
+  .min(1)
+  .refine(
+    (source) => new TextEncoder().encode(source).byteLength <= 300_000,
+    'Film Kit 源码不能超过300000字节',
+  );
+const filmKitItemFields = {
+  name: filmKitNameSchema,
+  what: z.string().trim().min(1).max(300),
+  pages: z.array(filmKitPageIdSchema).min(2).max(30),
+};
+export const filmKitItemSchema = z
+  .object(filmKitItemFields)
+  .strict()
+  .superRefine((item, ctx) => {
+    if (new Set(item.pages).size !== item.pages.length)
+      ctx.addIssue({ code: 'custom', message: 'Film Kit 页面不能重复' });
+  });
+export const filmKitComponentResultSchema = z
+  .object({
+    ...filmKitItemFields,
+    status: z.enum([
+      'planned',
+      'generating',
+      'checking',
+      'passed',
+      'failed',
+      'dropped',
+    ]),
+    source: filmKitSourceSchema.optional(),
+    sourceHash: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    checkSource: filmKitSourceSchema.optional(),
+    error: z.string().trim().min(1).max(1000).optional(),
+  })
+  .strict()
+  .superRefine((component, ctx) => {
+    if (new Set(component.pages).size !== component.pages.length)
+      ctx.addIssue({ code: 'custom', message: 'Film Kit 页面不能重复' });
+    if (
+      (component.source === undefined) !==
+      (component.sourceHash === undefined)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Film Kit 组件源码与哈希必须同时存在',
+      });
+  });
+export const filmKitStateSchema = z
+  .object({
+    status: z.enum([
+      'planned',
+      'generating',
+      'checking',
+      'partial',
+      'passed',
+      'failed',
+    ]),
+    source: filmKitSourceSchema.optional(),
+    sourceHash: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    components: z.array(filmKitComponentResultSchema).min(1).max(3),
+    error: z.string().trim().min(1).max(1000).optional(),
+  })
+  .strict()
+  .superRefine((kit, ctx) => {
+    if ((kit.source === undefined) !== (kit.sourceHash === undefined))
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Film Kit 合并源码与哈希必须同时存在',
+      });
+    if (
+      ['checking', 'partial', 'passed'].includes(kit.status) &&
+      kit.source === undefined
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: '已生成的 Film Kit 必须保存合并源码',
+      });
+    if (
+      new Set(kit.components.map((item) => item.name)).size !==
+      kit.components.length
+    )
+      ctx.addIssue({ code: 'custom', message: 'Film Kit 组件名称不能重复' });
+  });
 export const legacyArtworkSchema = z.union([artworkV1Schema, artworkV2Schema]);
 export const sceneArtworkSchema = z.union([
   artworkV1Schema,
@@ -397,6 +487,11 @@ export const sceneArtworkSchema = z.union([
 export type ArtworkV1 = z.infer<typeof artworkV1Schema>;
 export type ArtworkV2 = z.infer<typeof artworkV2Schema>;
 export type SceneProgramV3 = z.infer<typeof sceneProgramV3Schema>;
+export type FilmKitItem = z.infer<typeof filmKitItemSchema>;
+export type FilmKitComponentResult = z.infer<
+  typeof filmKitComponentResultSchema
+>;
+export type FilmKitState = z.infer<typeof filmKitStateSchema>;
 export type MotionTrack = z.infer<typeof motionTrackSchema>;
 export interface MotionCue {
   id: string;

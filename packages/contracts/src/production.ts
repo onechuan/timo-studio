@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import {
+  drawingStyleSchema,
+  filmKitStateSchema,
   isLegacyArtwork,
   sceneLayoutSchema,
   sceneArtworkSchema,
 } from './artwork.js';
-import type { SceneReview } from './review.js';
+import { wholeFilmReviewSchema, type SceneReview } from './review.js';
 import type { ProductionFailure } from './production-failure.js';
 const text = z.string().trim().min(1);
 const id = text.max(80).regex(/^[a-zA-Z0-9_-]+$/);
@@ -109,6 +111,16 @@ export const productionStageSchema = z.enum([
   'failed',
 ]);
 export type ProductionStage = z.infer<typeof productionStageSchema>;
+export const filmVisualStateSchema = z
+  .object({
+    upstreamRevision: z.string().regex(/^[a-f0-9]{40}$/),
+    engineRevision: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+    style: drawingStyleSchema,
+    filmKit: filmKitStateSchema.optional(),
+    wholeFilmReview: wholeFilmReviewSchema.optional(),
+  })
+  .strict();
+export type FilmVisualState = z.infer<typeof filmVisualStateSchema>;
 export interface Production {
   aspectRatio: '16:9' | '9:16';
   projectId: string;
@@ -118,6 +130,7 @@ export interface Production {
   storyboard?: StoryboardPlan;
   scenes: FilmScene[];
   durationMs?: number;
+  visual?: FilmVisualState;
   timingSource?: 'audio-per-cue';
   artifacts: {
     preview?: string;
