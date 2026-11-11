@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import manifest from '../packages/drawing-engine/upstream.json';
+import manifest from '../packages/drawing-engine/upstream.json' with { type: 'json' };
 import { auditEngine } from '../scripts/sync-frametell-engine.mjs';
 
 const SOURCE_ROOT =

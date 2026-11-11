@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="560" viewBox="0 0 1080 560">
+  <rect width="1080" height="560" rx="36" fill="#101827"/>
+  <circle cx="178" cy="280" r="106" fill="#68d8d6"/>
+  <path d="M140 282l48 48 96-120" fill="none" stroke="#101827" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="340" y="250" fill="#f6f7fb" font-family="Arial, sans-serif" font-size="72" font-weight="700">TimoTV</text>
+  <text x="340" y="334" fill="#9fb2ca" font-family="Arial, sans-serif" font-size="42">local media parity fixture</text>
+</svg>
