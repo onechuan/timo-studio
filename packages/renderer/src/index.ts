@@ -14,3 +14,4 @@ export * from './program.js';
 export * from './program-preview.js';
 export * from './film-kit-review.js';
 export * from './whole-film-review.js';
+export * from './visual-payload.js';

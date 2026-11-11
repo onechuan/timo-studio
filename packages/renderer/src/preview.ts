@@ -4,12 +4,22 @@ import { playerMarkup } from './player.js';
 import { previewAudioUrl } from './media.js';
 import { compileArtwork, renderArtworkFrame } from './artwork.js';
 import { programFilmHtml } from './program-preview.js';
+import { visualPayloadMarkup } from './visual-payload.js';
+
+export type FilmDocumentMode = 'preview' | 'review' | 'export';
+export interface FilmHtmlOptions {
+  mode?: FilmDocumentMode;
+  controls?: boolean;
+}
 
 /** The same deterministic SVG scene is used in preview and encoded video frames. */
-export function filmHtml(p: Production, { controls = true } = {}) {
+export function filmHtml(
+  p: Production,
+  { mode = 'preview', controls = mode === 'preview' }: FilmHtmlOptions = {},
+) {
   validateFilmTiming(p);
   if (p.scenes.some((scene) => scene.artwork?.version === 3))
-    return programFilmHtml(p, { controls });
+    return programFilmHtml(p, { mode, controls });
   const data = JSON.stringify(p.scenes).replace(/</g, '\\u003c');
   const frames = JSON.stringify(
     p.scenes.map((s) => compileArtwork(s, p.aspectRatio, p.brief.style)),
@@ -27,7 +37,7 @@ export function filmHtml(p: Production, { controls = true } = {}) {
 #film-canvas{position:absolute;inset:0;margin:auto;width:min(100vw,calc(100vh * ${portrait ? 9 / 16 : 16 / 9}));height:min(100vh,calc(100vw / ${portrait ? 9 / 16 : 16 / 9}));container-type:size;overflow:hidden}
 #title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}#stage,#visual{position:absolute;inset:0}#visual>svg{display:block;width:100%;height:100%}
 #caption{position:absolute;top:${portrait ? '84%' : '82%'};left:8%;width:84%;font-size:${portrait ? '3.8cqw' : '2.35cqw'};line-height:1.45;text-align:center;white-space:pre-wrap;text-wrap:balance}
-</style></head><body><div id="film-canvas"><div id="stage"><h1 id="title"></h1><div id="visual"></div><div id="caption"></div></div></div>
+</style></head><body data-film-mode="${mode}">${visualPayloadMarkup(p)}<div id="film-canvas"><div id="stage"><h1 id="title"></h1><div id="visual"></div><div id="caption"></div></div></div>
 <script>
 const scenes=${data}, artworkFrames=${frames};
 const evaluateScene=${evaluateScene.toString()};

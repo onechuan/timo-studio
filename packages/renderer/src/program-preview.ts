@@ -3,6 +3,8 @@ import { compileArtwork, renderArtworkFrame } from './artwork.js';
 import { evaluateScene, componentSvg } from './motion.js';
 import { previewAudioUrl } from './media.js';
 import { playerMarkup } from './player.js';
+import type { FilmDocumentMode } from './preview.js';
+import { visualPayloadMarkup } from './visual-payload.js';
 import {
   drawingEngineAssets,
   hashProgramSource,
@@ -16,7 +18,10 @@ const inlineScript = (source: string) =>
 
 export function programFilmHtml(
   p: Production,
-  { controls = true }: { controls?: boolean } = {},
+  {
+    mode = 'preview',
+    controls = mode === 'preview',
+  }: { mode?: FilmDocumentMode; controls?: boolean } = {},
 ): string {
   const programs = p.scenes.flatMap((scene) =>
     scene.artwork?.version === 3 ? [{ scene, artwork: scene.artwork }] : [],
@@ -117,7 +122,7 @@ export function programFilmHtml(
 
   return `<!doctype html><html lang="${p.brief.language === 'en' ? 'en' : 'zh'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; media-src 'self'; connect-src 'none'; font-src 'none'"><title>视频预览</title><style>${assets.css}
 html,body{width:100%;height:100%;margin:0;background:#090c12}#film-canvas{position:fixed;inset:0;overflow:hidden}#viewport{position:absolute}.legacy-artwork{position:absolute;inset:0}.legacy-artwork>svg{display:block;width:100%;height:100%}
-</style></head><body><div id="film-canvas"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><filter id="wc" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter></defs></svg><div id="viewport"><div id="frame"${portrait ? ' class="portrait"' : ''}><div id="bg"></div><div id="stage"></div><div id="vignette"></div></div></div></div>
+</style></head><body data-film-mode="${mode}">${visualPayloadMarkup(p)}<div id="film-canvas"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><filter id="wc" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter></defs></svg><div id="viewport"><div id="frame"${portrait ? ' class="portrait"' : ''}><div id="bg"></div><div id="stage"></div><div id="vignette"></div></div></div></div>
 <script>const scenes=${json(p.scenes)};window.STAGE=${json(stage)};window.SCRIPT=${json(script)};</script>${assetScripts}${filmKitScript}
 <script>window.TIMO=Object.freeze({visual:(id,draw)=>ENGINE.visual(id,draw)});
 const legacyFrames=${json(legacyFrames)};
