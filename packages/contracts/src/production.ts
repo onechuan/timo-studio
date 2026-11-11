@@ -9,6 +9,7 @@ import {
 } from './artwork.js';
 import { wholeFilmReviewSchema, type SceneReview } from './review.js';
 import type { ProductionFailure } from './production-failure.js';
+import type { VideoPipeline } from './settings.js';
 const text = z.string().trim().min(1);
 const id = text.max(80).regex(/^[a-zA-Z0-9_-]+$/);
 export const contentTypeSchema = z.enum(['general', 'explainer', 'product']);
@@ -126,6 +127,8 @@ export type FilmVisualState = z.infer<typeof filmVisualStateSchema>;
 export interface Production {
   aspectRatio: '16:9' | '9:16';
   projectId: string;
+  /** Absent only on productions created before pipeline selection was persisted. */
+  videoPipeline?: VideoPipeline;
   revision: number;
   stage: ProductionStage;
   brief: ProductionBrief;

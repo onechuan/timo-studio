@@ -48,7 +48,8 @@ const scene: FilmScene = {
   }),
 };
 const legacy = (value: FilmScene) => {
-  if (!isLegacyArtwork(value.artwork)) throw new Error('Expected legacy artwork');
+  if (!isLegacyArtwork(value.artwork))
+    throw new Error('Expected legacy artwork');
   return value.artwork;
 };
 describe('cue-driven artwork', () => {
@@ -155,6 +156,12 @@ it('composes an artwork revision using the existing measured audio', async () =>
     expect(
       await readFile(join(root, result.artifacts.preview!), 'utf8'),
     ).toContain('src="../r2/audio.wav"');
+    expect(
+      projectAudioKey({
+        ...p,
+        artifacts: { audio: 'production/demo/audio/preserved.wav' },
+      }),
+    ).toBe('production/demo/audio/preserved.wav');
     for (const key of [
       'production/other/r2/audio.wav',
       'production/demo/r6/audio.wav',

@@ -72,7 +72,9 @@ export interface ProductionOperations {
 }
 export function createProductionRunner(
   store: ProductionRunStore,
-  createOperations: () => Promise<ProductionOperations> | ProductionOperations,
+  createOperations: (
+    production: Production,
+  ) => Promise<ProductionOperations> | ProductionOperations,
   mapFailure: (
     error: unknown,
     fallback: ProductionFailureFallback,
@@ -114,7 +116,7 @@ export function createProductionRunner(
     try {
       await store.start(p, id);
       const signal = AbortSignal.timeout(20 * 60 * 1000);
-      const ops = await createOperations();
+      const ops = await createOperations(p);
       const log = async (
         message: string,
         stage: Production['stage'],

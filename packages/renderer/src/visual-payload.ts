@@ -54,7 +54,7 @@ export function visualFilmPayload(production: Production) {
       sceneId: scene.id,
       artwork: scene.artwork,
     })),
-    media: production.artifacts.audio
+    media: production.artifacts?.audio
       ? { audio: projectAudioKey(production) }
       : {},
     engineRevision: production.visual?.engineRevision,

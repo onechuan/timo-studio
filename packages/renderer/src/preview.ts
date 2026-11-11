@@ -40,6 +40,8 @@ export function filmHtml(
 </style></head><body data-film-mode="${mode}">${visualPayloadMarkup(p)}<div id="film-canvas"><div id="stage"><h1 id="title"></h1><div id="visual"></div><div id="caption"></div></div></div>
 <script>
 const scenes=${data}, artworkFrames=${frames};
+// esbuild may retain this naming helper inside Function#toString during TSX tests.
+const __name=(target)=>target;
 const evaluateScene=${evaluateScene.toString()};
 const componentSvg=${componentSvg.toString()};
 const drawArtwork=${renderArtworkFrame.toString()};

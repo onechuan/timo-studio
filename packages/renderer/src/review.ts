@@ -6,14 +6,13 @@ import type {
 } from '@timotv/contracts';
 import { isLegacyArtwork } from '@timotv/contracts';
 import { createHash, randomUUID } from 'node:crypto';
-import { access, mkdir, readFile, realpath, lstat, rm } from 'node:fs/promises';
+import { mkdir, readFile, realpath, lstat, rm } from 'node:fs/promises';
 import { join, relative, isAbsolute, sep } from 'node:path';
-import { chromium } from 'playwright-core';
-import { filmHtml, validateFilmTiming } from './preview.js';
-import { measureReviewFrame } from './browser-measure.js';
+import { validateFilmTiming } from './preview.js';
+import { createBrowserRuntime } from './browser-runtime.js';
 
 /** Bump whenever deterministic rendering or measurement semantics change. */
-export const REVIEW_ENGINE_VERSION = 'animation-review-4.0';
+export const REVIEW_ENGINE_VERSION = 'animation-review-4.1';
 function stable(value: unknown): string {
   if (value === undefined) return 'null';
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
@@ -215,59 +214,19 @@ export async function captureSceneReview(
       randomUUID(),
     ];
   const directory = await safeAttempt(root, prefix);
-  let executablePath = process.env.CHROME_PATH;
-  for (const path of [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium',
-  ]) {
-    if (executablePath) break;
-    try {
-      await access(path);
-      executablePath = path;
-    } catch {}
-  }
-  if (!executablePath) throw new Error('Chrome not found; set CHROME_PATH');
-  signal?.throwIfAborted();
-  const browser = await chromium.launch({ executablePath, headless: true });
-  const close = () => {
-    void browser.close().catch(() => {});
-  };
-  signal?.addEventListener('abort', close, { once: true });
+  const runtime = createBrowserRuntime({
+    phase: 'reviewing',
+    context: { sceneId: s.id },
+  });
   const frames: ReviewFrame[] = [],
     issues: ReviewIssue[] = [];
   let atMs = plan.times[0];
+  let page: Awaited<ReturnType<typeof runtime.newFilmPage>> | undefined;
   try {
     signal?.throwIfAborted();
-    const page = await browser.newPage({
-      viewport:
-        p.aspectRatio === '9:16'
-          ? { width: 1080, height: 1920 }
-          : { width: 1920, height: 1080 },
-      deviceScaleFactor: 1,
-    });
-    await page.route('**/*', (route) => route.abort());
-    page.on('pageerror', (e) =>
-      issues.push({
-        kind: 'runtime',
-        severity: 'error',
-        atMs,
-        elementIds: [],
-        what: e.message.slice(0, 600),
-        fix: '修复页面渲染错误后重新审片。',
-      }),
-    );
-    await page.setContent(filmHtml(p, { controls: false }));
-    await page.evaluate(async () => {
-      await ((window as any).__ready ?? document.fonts.ready);
-    });
-    const buildErrors = await page.evaluate(
-      (sceneId) =>
-        ((window as any).ENGINE?.errors ?? []).filter(
-          (error: { page?: string }) => error.page === sceneId,
-        ),
-      s.id,
-    );
+    page = await runtime.newFilmPage(p, signal);
+    const initial = await page.renderAt(atMs);
+    const buildErrors = initial.engine.filter((error) => error.page === s.id);
     if (buildErrors.length) {
       issues.push(
         ...buildErrors.map((error: { message?: string }) => ({
@@ -287,30 +246,12 @@ export async function captureSceneReview(
       atMs = time;
       // Catch only deterministic page code failures. Browser transport, cancellation,
       // screenshots and filesystem failures retain their original rejection semantics.
-      const renderResult = await page.evaluate(
-        ({ time, sceneId }) => {
-          try {
-            (window as any).renderAt(time);
-            return {
-              thrown: null,
-              engine: ((window as any).ENGINE?.errors ?? []).filter(
-                (error: { page?: string }) => error.page === sceneId,
-              ),
-            };
-          } catch (error) {
-            return {
-              thrown: (error instanceof Error
-                ? error.message
-                : String(error)
-              ).slice(0, 600),
-              engine: [],
-            };
-          }
-        },
-        { time, sceneId: s.id },
-      );
+      const renderResult = await page.renderAt(time);
       const runtimeError =
-        renderResult.thrown || renderResult.engine[0]?.message || null;
+        renderResult.thrown ||
+        renderResult.engine.find((error) => error.page === s.id)?.message ||
+        renderResult.pageErrors[0] ||
+        null;
       if (runtimeError !== null) {
         issues.push({
           kind: 'runtime',
@@ -322,7 +263,7 @@ export async function captureSceneReview(
         });
         break;
       }
-      const measured = await page.evaluate(measureReviewFrame, {
+      const measured = await page.measure({
         atMs: time,
         decorativeIds: (isLegacyArtwork(s.artwork) ? s.artwork.elements : [])
           .filter(
@@ -345,30 +286,12 @@ export async function captureSceneReview(
         const name = `${time}.png`;
         const path = join(directory, name);
         const repeatPath = join(directory, `${time}.repeat.png`);
-        await page.screenshot({ path });
-        const repeated = await page.evaluate(
-          ({ time, sceneId }) => {
-            try {
-              (window as any).renderAt(time);
-              return {
-                thrown: null,
-                engine: ((window as any).ENGINE?.errors ?? []).filter(
-                  (error: { page?: string }) => error.page === sceneId,
-                ),
-              };
-            } catch (error) {
-              return {
-                thrown: (error instanceof Error
-                  ? error.message
-                  : String(error)
-                ).slice(0, 600),
-                engine: [],
-              };
-            }
-          },
-          { time, sceneId: s.id },
-        );
-        const repeatError = repeated.thrown || repeated.engine[0]?.message;
+        await page.screenshot(path);
+        const repeated = await page.renderAt(time);
+        const repeatError =
+          repeated.thrown ||
+          repeated.engine.find((error) => error.page === s.id)?.message ||
+          repeated.pageErrors[0];
         if (repeatError) {
           issues.push({
             kind: 'runtime',
@@ -381,7 +304,7 @@ export async function captureSceneReview(
           break;
         }
         try {
-          await page.screenshot({ path: repeatPath });
+          await page.screenshot(repeatPath);
           const [firstImage, repeatImage] = await Promise.all([
             readFile(path),
             readFile(repeatPath),
@@ -412,7 +335,7 @@ export async function captureSceneReview(
     }
     return { frames, issues, omittedCueIds: plan.omittedCueIds };
   } finally {
-    signal?.removeEventListener('abort', close);
-    await browser.close();
+    await page?.close();
+    await runtime.close();
   }
 }

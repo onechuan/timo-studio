@@ -56,3 +56,8 @@ it('uses the same visual document for preview, review, and export', () => {
   expect(review).not.toContain('player-controls');
   expect(exported).not.toContain('player-controls');
 });
+
+it('keeps old productions without an artifacts object previewable', () => {
+  const legacy = { ...film, artifacts: undefined } as unknown as Production;
+  expect(extractVisualPayload(filmHtml(legacy))).toMatchObject({ media: {} });
+});

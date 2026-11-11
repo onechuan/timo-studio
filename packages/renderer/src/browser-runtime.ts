@@ -232,6 +232,10 @@ export function createBrowserRuntime(
         async screenshot(path) {
           signal?.throwIfAborted();
           try {
+            if (phase === 'reviewing')
+              // Chrome can rasterize freshly replaced SVG text differently in
+              // the same compositor tick. Let it settle before determinism captures.
+              await new Promise((resolve) => setTimeout(resolve, 100));
             await page.screenshot({ path });
           } catch (error) {
             throw runtimeFailure(phase, options.context, 'screenshot', error);

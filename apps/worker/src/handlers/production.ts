@@ -5,8 +5,13 @@ import {
   ProductionFailureError,
   toProductionFailure,
   type ProductionFailureFallback,
+  type ProductionOperations,
 } from '@timotv/core';
-import type { ProductionFailure, ProductionPhase } from '@timotv/contracts';
+import {
+  resolveVideoPipeline,
+  type ProductionFailure,
+  type ProductionPhase,
+} from '@timotv/contracts';
 import {
   ArtworkValidationError,
   planFilm,
@@ -208,19 +213,14 @@ export function productionHandler(
 ) {
   return createProductionRunner(
     productionRunStore(db),
-    async () => {
+    async (production) => {
       const env = await runtimeEnv();
       const model = () => injectedModel ?? piGenerator(env);
-      return {
+      const common: ProductionOperations = {
         plan: (p, signal) => planFilm(p, model(), signal),
         script: (p, signal) => writeFilmScript(p, model(), signal),
         narrate: (production, signal) =>
           narrateFilm({ production, root, env, signal }),
-        planFilmKit: async (production) => planProductionFilmKit(production),
-        generateFilmKitPart: (production, name, signal) =>
-          generateProductionFilmKitPart(production, name, model(), signal),
-        reviewFilmKit: filmKitReviewer(root, env),
-        reviewWholeFilm: wholeFilmReviewer(root, env),
         illustrateScene: (production, index, signal) =>
           illustrateFilmSceneProgram(production, index, model(), signal),
         reviewScene: sceneReviewer(root, env),
@@ -238,6 +238,21 @@ export function productionHandler(
         render: (production, signal) =>
           renderFilm({ production, root, signal }),
       };
+      const pipeline = resolveVideoPipeline(
+        production.videoPipeline ?? 'legacy-v3',
+        env,
+      );
+      return pipeline === 'frametell-parity'
+        ? {
+            ...common,
+            planFilmKit: async (production) =>
+              planProductionFilmKit(production),
+            generateFilmKitPart: (production, name, signal) =>
+              generateProductionFilmKitPart(production, name, model(), signal),
+            reviewFilmKit: filmKitReviewer(root, env),
+            reviewWholeFilm: wholeFilmReviewer(root, env),
+          }
+        : common;
     },
     filmFailure,
   );
