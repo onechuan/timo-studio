@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   drawingStyleSchema,
+  filmKitItemSchema,
   filmKitStateSchema,
   isLegacyArtwork,
   sceneLayoutSchema,
@@ -48,6 +49,7 @@ export const storyboardPlanSchema = z
   .object({
     title: text.max(120),
     summary: text.max(1000),
+    kit: z.array(filmKitItemSchema).max(3).optional(),
     scenes: z.array(planned).min(1).max(30),
   })
   .superRefine((v, c) => {
