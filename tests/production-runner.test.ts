@@ -7,6 +7,106 @@ import { ProductionFailureError } from '../packages/core/src/production/failure.
 import type { ProductionFailure } from '../packages/contracts/src/production-failure.js';
 import type { Production, Job } from '../packages/contracts/src/index.js';
 describe('production runner', () => {
+  it('repairs only pages named by whole-film review and stops after two rounds', async () => {
+    const repaired: string[] = [];
+    let saved = {
+      projectId: 'project',
+      revision: 1,
+      jobId: 'job',
+      stage: 'illustrating',
+      brief: { durationSec: 60, style: 'warm' },
+      artifacts: { audio: 'voice.wav' },
+      events: [],
+      scenes: ['p01', 'p02', 'p03', 'p04'].map((id) => ({
+        id,
+        artwork: { version: 1, intent: id, elements: [] },
+      })),
+      visual: {
+        upstreamRevision: 'a'.repeat(40),
+        engineRevision: `sha256:${'b'.repeat(64)}`,
+        style: 'warm-story',
+        filmKit: { status: 'none', components: [] },
+      },
+    } as unknown as Production;
+    const unchanged = async (production: Production) => production;
+    await createProductionRunner(
+      {
+        load: async () => ({
+          job: { id: 'job', type: 'illustrate', status: 'queued' } as Job,
+          production: saved,
+        }),
+        start: async () => {},
+        checkpoint: async (production) => {
+          saved = production;
+        },
+        complete: async (production) => {
+          saved = production;
+        },
+        fail: async () => {},
+      },
+      () => ({
+        plan: unchanged,
+        script: unchanged,
+        narrate: unchanged,
+        illustrateScene: unchanged,
+        render: unchanged,
+        compose: unchanged,
+        reviewScene: async (production, index) => ({
+          ...production,
+          scenes: production.scenes.map((scene, sceneIndex) =>
+            sceneIndex === index
+              ? {
+                  ...scene,
+                  review: {
+                    fingerprint: `page-${scene.id}`,
+                    status: 'passed' as const,
+                    round: scene.review?.round ?? 0,
+                    mode: 'visual' as const,
+                    frames: [],
+                    issues: [],
+                    omittedCueIds: [],
+                  },
+                }
+              : scene,
+          ),
+        }),
+        repairScene: async (production, index) => {
+          repaired.push(production.scenes[index]!.id);
+          return production;
+        },
+        reviewWholeFilm: async (production) => {
+          const round = production.visual!.wholeFilmReview?.round ?? 0;
+          const sceneIds = round === 0 ? ['p02'] : ['p02', 'p04'];
+          return {
+            ...production,
+            visual: {
+              ...production.visual!,
+              wholeFilmReview: {
+                fingerprint: `whole-${round}`.padEnd(64, '0'),
+                status: 'needs_attention' as const,
+                round,
+                frames: [],
+                issues: sceneIds.map((sceneId) => ({
+                  kind: 'continuity' as const,
+                  severity: 'warning' as const,
+                  sceneIds: [sceneId],
+                  atMs: 0,
+                  elementIds: [],
+                  what: '主体不连续',
+                  fix: '延续主体外观',
+                })),
+              },
+            },
+          };
+        },
+      }),
+      () => 'safe',
+    )('job');
+
+    expect(repaired).toEqual(['p02', 'p02', 'p04']);
+    expect(saved.visual?.wholeFilmReview?.round).toBe(2);
+  });
+
   it('checks a reusable Film Kit before drawing any page', async () => {
     const calls: string[] = [];
     let saved = {

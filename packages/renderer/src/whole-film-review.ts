@@ -45,12 +45,32 @@ function stable(value: unknown): string {
 }
 
 export function wholeFilmFingerprint(production: Production): string {
+  const visual = production.visual
+    ? {
+        upstreamRevision: production.visual.upstreamRevision,
+        engineRevision: production.visual.engineRevision,
+        style: production.visual.style,
+        filmKit: production.visual.filmKit
+          ? {
+              status: production.visual.filmKit.status,
+              sourceHash: production.visual.filmKit.sourceHash,
+              components: production.visual.filmKit.components.map(
+                ({ name, status, sourceHash }) => ({
+                  name,
+                  status,
+                  sourceHash,
+                }),
+              ),
+            }
+          : undefined,
+      }
+    : undefined;
   return createHash('sha256')
     .update(
       stable({
         engine: WHOLE_FILM_REVIEW_VERSION,
         aspectRatio: production.aspectRatio,
-        visual: production.visual,
+        visual,
         scenes: production.scenes.map((scene) => ({
           id: scene.id,
           title: scene.title,

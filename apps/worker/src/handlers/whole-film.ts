@@ -21,7 +21,10 @@ type Capture = (
   signal?: AbortSignal,
 ) => Promise<WholeFilmEvidence>;
 
-function stateFingerprint(production: Production, configRevision: string) {
+export function wholeFilmStateFingerprint(
+  production: Production,
+  configRevision: string,
+) {
   return createHash('sha256')
     .update(`${wholeFilmFingerprint(production)}:${configRevision}`)
     .digest('hex');
@@ -96,7 +99,7 @@ export function wholeFilmReviewer(
     checkpoint?: (next: Production) => Promise<void>,
   ): Promise<Production> => {
     if (!production.visual) throw new Error('WHOLE_FILM_VISUAL_STATE_MISSING');
-    const fingerprint = stateFingerprint(production, config.revision);
+    const fingerprint = wholeFilmStateFingerprint(production, config.revision);
     const previous = production.visual.wholeFilmReview;
     if (
       previous?.fingerprint === fingerprint &&
@@ -110,9 +113,14 @@ export function wholeFilmReviewer(
       previous?.fingerprint === fingerprint
         ? restoredEvidence(production, fingerprint, previous.frames)
         : undefined;
-    evidence ??= await capture(production, root, signal);
-    evidence.fingerprint = fingerprint;
-    evidence.sheet ??= await readSheet(production, root, evidence.sheetKey);
+    try {
+      evidence ??= await capture(production, root, signal);
+      evidence.fingerprint = fingerprint;
+      evidence.sheet ??= await readSheet(production, root, evidence.sheetKey);
+    } catch (error) {
+      if (signal.aborted) throw error;
+      throw new Error('WHOLE_FILM_CAPTURE_FAILED', { cause: error });
+    }
     const frames = evidenceFrames(evidence);
     let current: Production = {
       ...production,
@@ -141,7 +149,15 @@ export function wholeFilmReviewer(
         },
       };
 
-    const result = await reviewWholeFilm(current, evidence, model, signal);
+    let result;
+    try {
+      result = await reviewWholeFilm(current, evidence, model, signal);
+    } catch (error) {
+      if (signal.aborted) throw error;
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'WHOLE_FILM_REVIEW_INVALID') throw error;
+      throw new Error('WHOLE_FILM_MODEL_FAILED', { cause: error });
+    }
     return {
       ...current,
       visual: {

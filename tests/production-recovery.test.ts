@@ -5,6 +5,15 @@ import {
 } from '../packages/db/src/production.js';
 import { createProductionRunner } from '../packages/core/src/production/runner.js';
 import type { Job, Production } from '../packages/contracts/src/index.js';
+import {
+  wholeFilmReviewer,
+  wholeFilmStateFingerprint,
+} from '../apps/worker/src/handlers/whole-film.js';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { wholeFilmFingerprint } from '../packages/renderer/src/whole-film-review.js';
+import { reviewModelConfig } from '../packages/agent/src/runtime/vision.js';
 
 it('resumes Film Kit generation without repeating a checkpointed component', async () => {
   const calls: string[] = [];
@@ -113,6 +122,92 @@ it('resumes Film Kit generation without repeating a checkpointed component', asy
 
   expect(calls).toEqual(['machine']);
   expect(saved.visual?.filmKit?.status).toBe('passed');
+});
+
+it('resumes from persisted whole-film evidence without recapturing it', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'timotv-whole-resume-'));
+  const sheetKey = 'production/project/r1/review/whole-film/whole-film-r1.jpg';
+  await mkdir(join(root, 'production/project/r1/review/whole-film'), {
+    recursive: true,
+  });
+  await writeFile(join(root, sheetKey), Buffer.from('jpeg-evidence'));
+  let captureCalls = 0;
+  const capture = async () => {
+    captureCalls++;
+    return {
+      fingerprint: 'a'.repeat(64),
+      sheetKey,
+      sheet: { mimeType: 'image/jpeg' as const, data: 'anBlZy1ldmlkZW5jZQ==' },
+      pages: [
+        {
+          sceneId: 'p01',
+          timeMs: 999,
+          key: 'production/project/r1/review/whole-film/p01.png',
+        },
+      ],
+      transitions: [],
+    };
+  };
+  let saved = {
+    projectId: 'project',
+    revision: 1,
+    aspectRatio: '16:9',
+    brief: { topic: 'resume', style: 'warm' },
+    scenes: [
+      {
+        id: 'p01',
+        cues: [{ id: 'c01', text: 'one', startMs: 0, endMs: 1000 }],
+        artwork: { version: 1, intent: 'one', elements: [] },
+      },
+    ],
+    visual: {
+      upstreamRevision: 'a'.repeat(40),
+      engineRevision: `sha256:${'b'.repeat(64)}`,
+      style: 'warm-story',
+      filmKit: { status: 'none', components: [] },
+    },
+    artifacts: {},
+    events: [],
+  } as unknown as Production;
+  const contentFingerprint = wholeFilmFingerprint(saved);
+  const failing = wholeFilmReviewer(
+    root,
+    {},
+    { generate: async () => Promise.reject(new Error('MODEL_TIMEOUT')) },
+    capture,
+  );
+  await expect(
+    failing(saved, AbortSignal.timeout(1000), async (next) => {
+      saved = next;
+    }),
+  ).rejects.toThrow('WHOLE_FILM_MODEL_FAILED');
+  expect(wholeFilmFingerprint(saved)).toBe(contentFingerprint);
+  expect(saved.visual?.wholeFilmReview?.frames).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ cueId: 'p01' }),
+      expect.objectContaining({ key: sheetKey }),
+    ]),
+  );
+  expect(saved.visual?.wholeFilmReview?.fingerprint).toBe(
+    wholeFilmStateFingerprint(saved, reviewModelConfig({}).revision),
+  );
+  saved.visual!.wholeFilmReview!.status = 'failed';
+
+  const resumed = wholeFilmReviewer(
+    root,
+    {},
+    {
+      generate: async () => ({
+        value: { pass: true, issues: [] },
+        usage: { input: 1, output: 1 },
+      }),
+    },
+    capture,
+  );
+  saved = await resumed(saved, AbortSignal.timeout(1000));
+  expect(captureCalls).toBe(1);
+  expect(saved.visual?.wholeFilmReview?.status).toBe('passed');
+  await rm(root, { recursive: true, force: true });
 });
 it('requeues only queued production jobs still owning the document', async () => {
   const enqueue = vi.fn();

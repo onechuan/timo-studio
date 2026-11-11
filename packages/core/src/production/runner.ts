@@ -40,6 +40,11 @@ export interface ProductionOperations {
     signal: AbortSignal,
     checkpoint?: (p: Production) => Promise<void>,
   ) => Promise<Production>;
+  reviewWholeFilm?: (
+    p: Production,
+    signal: AbortSignal,
+    checkpoint?: (p: Production) => Promise<void>,
+  ) => Promise<Production>;
   illustrateScene: (
     p: Production,
     index: number,
@@ -62,6 +67,7 @@ export interface ProductionOperations {
     p: Production,
     index: number,
     signal: AbortSignal,
+    feedback?: string,
   ) => Promise<Production>;
 }
 export function createProductionRunner(
@@ -459,6 +465,90 @@ export function createProductionRunner(
             )
               throw new Error('画面无法渲染，请重绘问题页');
             checkingIndex = undefined;
+          }
+        }
+        if (ops.reviewWholeFilm && p.visual) {
+          for (;;) {
+            phase = 'reviewing';
+            await log('正在检查整片跨页一致性与节奏', 'illustrating', 86);
+            p = await ops.reviewWholeFilm(p, signal, async (next) => {
+              p = next;
+              await store.checkpoint(p, id, 87);
+            });
+            const report = p.visual?.wholeFilmReview;
+            if (
+              !report ||
+              ['passed', 'accepted', 'unreviewed'].includes(report.status) ||
+              report.status !== 'needs_attention' ||
+              report.round >= 2 ||
+              !ops.repairScene ||
+              !ops.reviewScene
+            )
+              break;
+
+            p = {
+              ...p,
+              visual: {
+                ...p.visual!,
+                wholeFilmReview: {
+                  ...report,
+                  status: 'repairing',
+                  round: report.round + 1,
+                },
+              },
+            };
+            await store.checkpoint(p, id, 88);
+            const affected = [
+              ...new Set(report.issues.flatMap((issue) => issue.sceneIds)),
+            ];
+            for (const sceneId of affected) {
+              const index = p.scenes.findIndex((scene) => scene.id === sceneId);
+              if (index < 0) throw new Error('WHOLE_FILM_REPAIR_FAILED');
+              activeSceneId = sceneId;
+              const feedback = JSON.stringify(
+                report.issues.filter((issue) =>
+                  issue.sceneIds.includes(sceneId),
+                ),
+              );
+              phase = 'illustrating';
+              try {
+                p = await ops.repairScene(p, index, signal, feedback);
+              } catch (error) {
+                if (signal.aborted) throw error;
+                throw new Error('WHOLE_FILM_REPAIR_FAILED', { cause: error });
+              }
+              p = {
+                ...p,
+                artifacts: {
+                  audio: p.artifacts.audio,
+                  subtitles: p.artifacts.subtitles,
+                },
+                scenes: p.scenes.map((scene, sceneIndex) =>
+                  sceneIndex === index && scene.review
+                    ? {
+                        ...scene,
+                        review: {
+                          ...scene.review,
+                          fingerprint: '',
+                          status: 'checking',
+                          frames: [],
+                          issues: [],
+                          error: undefined,
+                          resume: undefined,
+                        },
+                      }
+                    : scene,
+                ),
+              };
+              await store.checkpoint(p, id, 89);
+              phase = 'reviewing';
+              p = await ops.reviewScene(p, index, signal, async (next) => {
+                p = next;
+                await store.checkpoint(p, id, 89);
+              });
+            }
+            activeSceneId = undefined;
+            await store.checkpoint(p, id, 90);
           }
         }
         activeSceneId = undefined;

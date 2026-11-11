@@ -13,6 +13,14 @@ export const productionPhaseSchema = z.enum([
 ]);
 export type ProductionPhase = z.infer<typeof productionPhaseSchema>;
 
+export const wholeFilmFailureCodeSchema = z.enum([
+  'WHOLE_FILM_CAPTURE_FAILED',
+  'WHOLE_FILM_REVIEW_INVALID',
+  'WHOLE_FILM_MODEL_FAILED',
+  'WHOLE_FILM_REPAIR_FAILED',
+]);
+export type WholeFilmFailureCode = z.infer<typeof wholeFilmFailureCodeSchema>;
+
 export const productionFailureContextSchema = z
   .object({
     sceneId: z.string().optional(),
