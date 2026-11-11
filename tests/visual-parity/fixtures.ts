@@ -72,7 +72,7 @@ async function prepareProject(
   const temporaryRoot = await mkdtemp(join(tmpdir(), 'timotv-visual-parity-'));
   const projectRoot = join(temporaryRoot, 'project');
   const sourceExample = join(
-    FRAMETELL_ENGINE_ROOT,
+    engineRoot,
     'styles',
     fixture.style,
     'example',
