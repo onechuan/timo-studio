@@ -1,0 +1,7 @@
+{
+  "kinds": ["object", "character", "scene", "texture"],
+  "max": 6,
+  "quality": "medium",
+  "prefix": "A quiet hand-drawn illustration in a scholar's notebook: fine dark-brown ink lines on warm cream paper, drawn with a nib in calm, slightly irregular strokes, with light cross-hatching for shade and soft transparent washes of colour laid over the line. The washes are muted and earthy: a faded brick red, slate blue, sage green, ochre and a touch of soft yellow, never more than two or three in one drawing, with plenty of paper left blank. Forms are honest and observed, like a careful sketch from a book on history, methods or ideas. People are ink-drawn figures with real faces (eyes, brows, nose and mouth in a few fine lines), natural proportions and plain clothes, thoughtful and calm. Scenes are quiet sketched rooms, streets and landscapes",
+  "avoid": "No text, letters, numbers, labels, logos, signatures or watermarks. No flat vector, no saturated colour, no gradients, no photorealism, no 3D render, no glossy highlights, no cartoon exaggeration."
+}

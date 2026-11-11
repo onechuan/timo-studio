@@ -1,0 +1,23 @@
+/* Tech dark */
+:root { --ink: #E8E6E1; --soft: #A9ADB1; --muted: #73797F; --band-color: rgba(21, 23, 26, 0.97);
+  --latin: 'JetBrains Mono', 'SF Mono', monospace; }
+#frame { background: #15171A; color: var(--ink); }
+#vignette { background: radial-gradient(ellipse 80% 75% at 50% 45%, transparent 60%, rgba(0, 0, 0, 0.35) 100%); }
+.tx.latin { font-weight: 600; letter-spacing: 0; }
+/* flat fills: drop the default pencil hatching laid over fills (it reads as warning tape on a dark diagram) */
+svg.ink path[fill="none"][opacity="0.13"] { display: none; }
+/* crisp fills: no watercolour edge displacement */
+svg.ink [filter="url(#wc)"] { filter: none; }
+/* the highlighter becomes a quiet selection band so light text on top stays readable */
+svg.ink g.mark path { opacity: 0.22; }
+.chrome::before { background: linear-gradient(to bottom, rgba(21, 23, 26, 1) 0%, rgba(21, 23, 26, 0.95) 55%, rgba(21, 23, 26, 0) 100%); }
+.ch-left { color: #73797F; font-family: var(--mono); font-size: 20px; }
+.ch-left b { color: #A9ADB1; }
+.ch-left .ch-no { font-family: var(--mono); font-size: 22px; font-weight: 600; color: #4FBFAE; }
+.ch-left em { border-left-color: #33383D; }
+.code { color: #D9D7D2; }
+.code .kw { color: #B596AE; font-weight: 600; } .code .str { color: #8DC27C; } .code .num { color: #E3A64B; } .code .fn { color: #4FBFAE; }
+.code .cm { color: #73797F; font-family: var(--mono); font-size: 1em; font-style: italic; }
+/* subtitles: a dark pill with a hairline edge */
+.subs span { color: #EEECE7; background: rgba(10, 11, 13, 0.84); border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08); }

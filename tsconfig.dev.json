@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true,
+    "paths": {
+      "@timotv/agent": ["packages/agent/src/index.ts"],
+      "@timotv/contracts": ["packages/contracts/src/index.ts"],
+      "@timotv/core": ["packages/core/src/index.ts"],
+      "@timotv/db": ["packages/db/src/index.ts"],
+      "@timotv/media": ["packages/media/src/index.ts"],
+      "@timotv/queue": ["packages/queue/src/index.ts"],
+      "@timotv/renderer": ["packages/renderer/src/index.ts"],
+      "@timotv/renderer/preview": ["packages/renderer/src/preview.ts"],
+      "@timotv/speech": ["packages/speech/src/index.ts"],
+      "@timotv/storage": ["packages/storage/src/index.ts"]
+    }
+  }
+}

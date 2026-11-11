@@ -1,0 +1,42 @@
+{
+  "title": "齿轮为什么能省力",
+  "summary": "用工程蓝图拆解齿轮传动、圆珠笔结构和管道漏点。",
+  "durationSec": 45,
+  "lang": "zh",
+  "style": "blueprint",
+  "cast": "none",
+  "pages": [
+    {
+      "id": "p01",
+      "section": "传动比",
+      "say": "大齿轮带着小齿轮转动，小齿轮转得更快。",
+      "core": true,
+      "beats": [
+        { "at": "c0", "object": "一大一小两个齿轮", "action": "沿工程中心线逐齿描出并咬合", "camera": "固定", "text": "" },
+        { "at": "c1", "object": "小齿轮", "action": "接住大齿轮的转动并加速旋转", "camera": "推近啮合处", "text": "" },
+        { "at": "c2", "object": "两个齿轮", "action": "按一慢一快三圈的节奏同步转动", "camera": "拉回全景", "text": "" }
+      ]
+    },
+    {
+      "id": "p02",
+      "section": "拆开看",
+      "say": "圆珠笔拆成笔帽、弹簧、笔芯、笔杆和按钮，弹簧决定手感。",
+      "core": true,
+      "beats": [
+        { "at": "c0", "object": "一支圆珠笔", "action": "沿水平装配轴线描出完整轮廓", "camera": "固定", "text": "" },
+        { "at": "c1", "object": "圆珠笔的五个零件", "action": "沿装配轴依次滑开并停在分解位置", "camera": "横向拉开", "text": "" },
+        { "at": "c2", "object": "中间的弹簧", "action": "被红色铅笔圈住并轻轻压缩回弹", "camera": "推近弹簧", "text": "手感在这" }
+      ]
+    },
+    {
+      "id": "p03",
+      "section": "漏点",
+      "say": "水流经过阀门和变细的弯头，压力集中在最容易漏的地方。",
+      "beats": [
+        { "at": "c0", "object": "带阀门的管道剖面", "action": "从入口到弯头一段段描出", "camera": "固定", "text": "" },
+        { "at": "c1", "object": "管道里的水流", "action": "穿过阀门并在变窄的弯头处加速", "camera": "跟随水流", "text": "" },
+        { "at": "c2", "object": "弯头漏点", "action": "被红色铅笔圈住并向外渗出一滴水", "camera": "推近漏点", "text": "漏点" }
+      ]
+    }
+  ]
+}

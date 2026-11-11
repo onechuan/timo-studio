@@ -20,3 +20,5 @@ export class LocalStorage implements ObjectStorage {
     return readFile(this.path(key));
   }
 }
+
+export * from './settings.js';

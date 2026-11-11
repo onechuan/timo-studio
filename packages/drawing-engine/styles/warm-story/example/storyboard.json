@@ -1,0 +1,33 @@
+{
+  "title": "复利：时间比本金更重要",
+  "summary": "每月存一千元三十年，只存和复利差了四倍多，而且大部分增长发生在最后十年。",
+  "durationSec": 75,
+  "style": "warm-story",
+  "palette": "warm-story/default",
+  "cast": "hands",
+  "pages": [
+    { "id": "p01", "section": "开场：三十年后有多少？", "say": "每月存一千元，三十年后能有多少钱？", "core": true, "beats": [
+      { "at": "c0", "object": "一只手和一个玻璃罐", "action": "手把硬币一枚枚丢进罐子", "camera": "固定", "text": "每月 1000" },
+      { "at": "c1", "object": "台历", "action": "一页页翻过去，从第 1 年翻到第 30 年", "camera": "推近", "text": "30 年" },
+      { "at": "c2", "object": "罐子上的标签", "action": "跳出一个问号", "camera": "固定", "text": "?" } ] },
+    { "id": "p02", "section": "只存不投：一枚一枚地变多", "say": "如果只是存起来，三十年一共存了三十六万。", "beats": [
+      { "at": "c0", "object": "玻璃罐", "action": "硬币一枚接一枚落进去，水位匀速上涨", "camera": "固定", "text": "" },
+      { "at": "c1:三十六万", "object": "罐子上的标签", "action": "数字从 0 数到 360,000 落定", "camera": "推近", "text": "360,000" } ] },
+    { "id": "p03", "section": "复利：收益也会生钱", "say": "收益第二年也开始生钱，像雪球越滚越大。", "core": true, "beats": [
+      { "at": "c1", "object": "一颗小雪球", "action": "从坡顶开始往下滚", "camera": "横移", "text": "" },
+      { "at": "c3", "object": "雪球", "action": "边滚边粘上雪，越滚越大", "camera": "跟拍", "text": "8%" },
+      { "at": "c4", "object": "雪球", "action": "冲到坡底停住", "camera": "砸入", "text": "" } ] },
+    { "id": "p04", "section": "对比：四倍多", "say": "同样每月一千，按 8% 算，三十年后大约一百四十九万，是只存的四倍多。", "core": true, "beats": [
+      { "at": "c0", "object": "两个玻璃罐", "action": "并排落在地面上", "camera": "固定", "text": "只存 / 复利" },
+      { "at": "c2:一百四十九万", "object": "右边的罐子", "action": "水位冲过左边，标签数到 1,490,359", "camera": "推近", "text": "1,490,359" },
+      { "at": "c3", "object": "两个罐子之间", "action": "一条刻度线把高度差拉开", "camera": "固定", "text": "×4.14" } ] },
+    { "id": "p05", "section": "时间：增长都在后面", "say": "大部分增长发生在最后十年。", "beats": [
+      { "at": "c0", "object": "一条山路", "action": "从左下往右上铺开，越往后越陡", "camera": "固定", "text": "" },
+      { "at": "c2", "object": "山路上的第 10 年路牌", "action": "滚动的硬币在这里停住", "camera": "推近", "text": "18万" },
+      { "at": "c3", "object": "一枚硬币", "action": "冲上最后一段陡坡", "camera": "横移", "text": "+90万" } ] },
+    { "id": "p06", "section": "收束：越早开始越好", "say": "复利最重要的是时间，越早开始，雪球就有越长的坡可以滚。", "beats": [
+      { "at": "c0", "object": "一棵小树苗", "action": "从土里长出来", "camera": "固定", "text": "" },
+      { "at": "c2", "object": "树", "action": "长高并结满果子", "camera": "推近", "text": "" },
+      { "at": "c3", "object": "一只手", "action": "把一枚硬币埋进树下的土里", "camera": "固定", "text": "今天" } ] }
+  ]
+}

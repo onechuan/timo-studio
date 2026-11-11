@@ -1,0 +1,7 @@
+{
+  "kinds": ["object", "character"],
+  "max": 6,
+  "quality": "medium",
+  "prefix": "A clean technical line illustration as on an engineer's architecture diagram: crisp single-weight lines of warm off-white, almost no wobble, right angles and even spacing, with flat dark-grey translucent panels inside shapes instead of fills. One accent colour only, a calm teal, marks the part that matters; amber, coral red or green appear only for a warning, an error or success. Forms are simple, precise and schematic: servers, chips, devices, databases, cables, gears, documents. People are drawn as minimal clean line figures in the same style, with a simple but real face (eyes, nose and mouth as a few precise lines), realistic proportions and clothes, never a stick figure",
+  "avoid": "No text, letters, numbers, labels, logos, signatures or watermarks. No background, no glow, no neon, no gradients, no hand-drawn wobble, no textures, no photorealism, no 3D render, no cyberpunk."
+}

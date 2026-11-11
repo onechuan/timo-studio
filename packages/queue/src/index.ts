@@ -50,3 +50,39 @@ export function diagnosticWorker(
     { connection: connection(url, true), concurrency: 2 },
   );
 }
+
+export function filmQueue(url: string, name = 'timotv-production') {
+  const q = new Queue(name, { connection: connection(url) });
+  q.on('error', () => {});
+  return {
+    queueName: name,
+    async state(id: string) {
+      const job = await q.getJob(id);
+      return job ? job.getState() : undefined;
+    },
+    async health() {
+      await q.getJobCounts('waiting');
+    },
+    async enqueue(id: string) {
+      await q.add(
+        'production',
+        { id },
+        { jobId: id, attempts: 1, removeOnComplete: 100, removeOnFail: 100 },
+      );
+    },
+    async close() {
+      await q.close();
+    },
+  };
+}
+export function filmWorker(
+  url: string,
+  run: (id: string) => Promise<void>,
+  name = 'timotv-production',
+) {
+  return new Worker(name, async (job) => run(job.data.id), {
+    connection: connection(url, true),
+    concurrency: 1,
+    lockDuration: 120000,
+  });
+}

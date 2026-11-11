@@ -1,0 +1,7 @@
+{
+  "kinds": ["object", "character"],
+  "max": 6,
+  "quality": "medium",
+  "prefix": "A whiteboard marker drawing, as in an RSA Animate or whiteboard explainer: drawn live with a thick black chisel marker in quick confident strokes, lines a little shaky and sometimes traced twice, ends not quite meeting. Almost everything is black outline; one or two colour markers, red, blue, green or orange, add a few strokes of emphasis, and fills are at most a quick light diagonal marker hatching. Shapes are simple and recognisable, drawn the way a good explainer sketches on the fly. People are sketched with the marker as simple cartoon figures with real faces (dot or small oval eyes, eyebrows, a nose line, an expressive mouth, a few strokes of hair) and clothed bodies with hands, lively and readable, never stick figures",
+  "avoid": "No text, letters, numbers, labels, logos, signatures or watermarks. No board, no background, no colour blocks, no gradients, no shadows, no glow, no photorealism, no 3D render, no yellow lines."
+}

@@ -1,0 +1,31 @@
+{
+  "title": "勾股定理：勾三股四弦五",
+  "summary": "用 3、4、5 的直角三角形和三条边上的正方形格子，一步步推出 a² + b² = c²。",
+  "durationSec": 60,
+  "style": "chalkboard",
+  "palette": "chalkboard/default",
+  "cast": "none",
+  "pages": [
+    { "id": "p01", "section": "开场：斜边有多长？", "say": "一个直角三角形，直角边是三和四，斜边有多长？", "core": true, "beats": [
+      { "at": "c0", "object": "一个直角三角形", "action": "粉笔一笔一笔描出三条边，直角处补一个小方角", "camera": "固定", "text": "" },
+      { "at": "c1", "object": "两条直角边", "action": "边旁写上 3 和 4", "camera": "推近", "text": "3 / 4" },
+      { "at": "c2", "object": "斜边", "action": "斜边旁写下一个问号并圈住", "camera": "固定", "text": "?" } ] },
+    { "id": "p02", "section": "画正方形：九格和十六格", "say": "在两条直角边上各画一个正方形，分别是九格和十六格。", "beats": [
+      { "at": "c0", "object": "短边上的正方形", "action": "沿着短边向外描出一个正方形", "camera": "固定", "text": "" },
+      { "at": "c1", "object": "短边上的正方形", "action": "格线一条条画进去，分成九格", "camera": "推近", "text": "9" },
+      { "at": "c2", "object": "长边上的正方形", "action": "描出来并分成十六格", "camera": "横移", "text": "16" } ] },
+    { "id": "p03", "section": "搬格子：九加十六", "say": "把格子搬到右边，九加十六正好铺满二十五格，所以斜边是五。", "core": true, "beats": [
+      { "at": "c0", "object": "一个五乘五的空正方形", "action": "在板子右边描出来", "camera": "固定", "text": "" },
+      { "at": "c1", "object": "九个黄色格子", "action": "一格一格飞进大正方形左上角", "camera": "固定", "text": "" },
+      { "at": "c2:二十五", "object": "十六个蓝色格子", "action": "接着飞进去，把大正方形铺满", "camera": "推近", "text": "25" },
+      { "at": "c3", "object": "大正方形的边", "action": "粉笔在边旁写上 5 并划两道线", "camera": "固定", "text": "5" } ] },
+    { "id": "p04", "section": "定理：a² + b² = c²", "say": "把三四五换成字母，就是 a 方加 b 方等于 c 方。", "core": true, "beats": [
+      { "at": "c0", "object": "三角形的三条边", "action": "旁边的 3、4、5 被擦掉，改写成 a、b、c", "camera": "固定", "text": "a / b / c" },
+      { "at": "c2", "object": "一行公式", "action": "逐字写出 a² + b² = c²", "camera": "推近", "text": "a² + b² = c²" },
+      { "at": "c2", "object": "公式外的粉笔框", "action": "绕公式描一圈把它框住", "camera": "固定", "text": "" } ] },
+    { "id": "p05", "section": "收束：勾三股四弦五", "say": "两千多年前的《周髀算经》里就写着勾三股四弦五。", "beats": [
+      { "at": "c0", "object": "一卷竹简", "action": "在板子左边一根根描出来", "camera": "固定", "text": "周髀算经" },
+      { "at": "c1", "object": "竹简上的字", "action": "竖着写出勾三股四弦五", "camera": "推近", "text": "勾三股四弦五" },
+      { "at": "c2", "object": "三角形的斜边", "action": "粉笔从竹简拉一条箭头到斜边，把 5 圈住", "camera": "固定", "text": "" } ] }
+  ]
+}

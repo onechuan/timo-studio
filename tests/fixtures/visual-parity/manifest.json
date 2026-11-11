@@ -1,0 +1,51 @@
+{
+  "upstreamRevision": "6145f7e3482628543bd6f2d68fe3b618d366213a",
+  "chromiumChannel": "chrome",
+  "deviceScaleFactor": 1,
+  "fixtures": [
+    {
+      "name": "whiteboard-landscape",
+      "style": "whiteboard",
+      "page": "p01",
+      "sampleSeconds": [1.5, 4.2],
+      "threshold": "strict"
+    },
+    {
+      "name": "chalkboard-portrait",
+      "style": "chalkboard",
+      "page": "p01",
+      "portrait": true,
+      "sampleSeconds": [1.8, 4.5],
+      "threshold": "strict"
+    },
+    {
+      "name": "warm-story-landscape",
+      "style": "warm-story",
+      "page": "p01",
+      "sampleSeconds": [1.6, 4.4],
+      "threshold": "strict"
+    },
+    {
+      "name": "tech-dark-landscape",
+      "style": "tech-dark",
+      "page": "p01",
+      "sampleSeconds": [1.5, 4.1],
+      "threshold": "strict"
+    },
+    {
+      "name": "diorama-webgl",
+      "style": "diorama",
+      "page": "p01",
+      "sampleSeconds": [1.8, 4.6],
+      "threshold": "webgl"
+    },
+    {
+      "name": "registered-local-media",
+      "style": "screencast",
+      "page": "p01",
+      "overlay": "local-media",
+      "sampleSeconds": [1.4, 3.6],
+      "threshold": "strict"
+    }
+  ]
+}

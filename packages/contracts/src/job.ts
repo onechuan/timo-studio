@@ -2,7 +2,7 @@ import { z } from 'zod';
 export const jobSchema = z.object({
   id: z.string().uuid(),
   projectId: z.string().uuid(),
-  type: z.literal('diagnostic'),
+  type: z.enum(['diagnostic', 'plan', 'produce', 'illustrate', 'export']),
   status: z.enum(['queued', 'running', 'succeeded', 'failed', 'cancelled']),
   progress: z.number().int().min(0).max(100),
   errorCode: z.string().nullable(),

@@ -1,0 +1,142 @@
+/* Speech timing: turns the script into absolute cue / page times. Shared by the browser and node tools. */
+(function (root) {
+  const CPS = 4.3;       // spoken units per second (calm lecture pace)
+  const BREATH = 0.3;    // pause after each cue
+  const COMMA = 0.14;    // extra pause per inner comma/dash
+  const LEAD = 0.5;      // page appears, then the first sentence starts
+  const GAP = 1.5;       // silent hold between pages (speaker's breathing room)
+  const FADE = 0.6;      // cross-fade at the end of the gap
+  const END = 2.5;       // the last page holds this long after its last line, so the film ends on a settled picture
+  const FADE_OUT = 0.8;  // the film fades to its ground over its final seconds, never a hard cut
+
+  /** Rough spoken length: a CJK character, kana or Hangul syllable = 1 unit, a word in any other script ~ its syllables,
+   *  digits = 1 each. */
+  const SYLLABIC = /[一-鿿぀-ヿ가-힯]/;
+  function units(text) {
+    let u = 0;
+    for (const ch of text) if (SYLLABIC.test(ch)) u += 1;
+    const words = text.replace(/[一-鿿぀-ヿ가-힯]/g, ' ').match(/[\p{L}\p{M}_]+/gu) || [];
+    for (const w of words) u += Math.max(1, w.replace(/_/g, '').length / 3.2);
+    u += (text.match(/\d/g) || []).length * 0.9;
+    return u;
+  }
+  const commas = (text) => (text.slice(0, -1).match(/[，、；：——,]/g) || []).length;
+
+  function cueDur(text) {
+    return Math.max(1.3, units(text) / CPS + commas(text) * COMMA + BREATH);
+  }
+
+  /**
+   * When a word inside a cue is spoken (absolute seconds). With real voice, cue.k holds per-character onsets in seconds
+   * from the start of the cue's audio (one entry per character of the cue text, Array.from order); without it the onset
+   * is estimated from the spoken units before the word. nth picks a later repeat of the word.
+   */
+  function wordTime(cue, word, nth = 0) {
+    const chars = Array.from(cue.text);
+    let from = 0, idx = -1;
+    for (let n = 0; n <= nth; n++) { idx = cue.text.indexOf(word, from); if (idx < 0) break; from = idx + word.length; }
+    if (idx < 0) return cue.start;   // unknown word: fall back to the cue onset rather than failing the page
+    const ci = Array.from(cue.text.slice(0, idx)).length;
+    if (cue.k && cue.k.length === chars.length) return (cue.audioAt ?? cue.start) + cue.k[ci];
+    const total = units(cue.text) || 1;
+    const spoken = (cue.dur ?? cue.end - cue.start) * 0.92;
+    return cue.start + (units(cue.text.slice(0, idx)) / total) * spoken;
+  }
+
+  /** Display form for subtitles: drop trailing soft punctuation. */
+  function subText(text) {
+    return text.replace(/[，。；：、,.;:]+$/u, '').replace(/——$/u, '');
+  }
+
+  // Real voice (voice.js from engine/tools/tts.mjs): cue length = trimmed audio + a natural pause, holds are capped,
+  // pages follow each other closely — no long silences.
+  const VOICE = { lead: 0.2, comma: 0.18, stop: 0.4, pageEnd: 0.3, maxHold: 0.5, gap: 0.3, tail: END };
+  const voiceOf = (voice, pi, ci, text) => { const v = voice && voice.pages[pi] && voice.pages[pi][ci]; return v && v.t === text ? v : null; };
+
+  /** opts.gap overrides GAP (script.js META.gap); opts.voice = SCRIPT.VOICE switches to real audio durations. */
+  function layout(pages, opts = {}) {
+    if (opts.timeline) {
+      const line = opts.timeline, finite = (n) => Number.isFinite(n), bad = () => { throw new Error('invalid measured timeline'); };
+      if (!line || !Array.isArray(line.pages) || line.pages.length !== pages.length || !finite(line.duration) || line.duration <= 0) bad();
+      let previous = 0;
+      const exact = pages.map((pg, idx) => {
+        const timed = line.pages[idx];
+        if (!timed || !finite(timed.start) || !finite(timed.end) || timed.start !== previous || timed.end <= timed.start || !Array.isArray(timed.cues) || timed.cues.length !== pg.cues.length) bad();
+        let cueStart = timed.start;
+        const cues = pg.cues.map((source, ci) => {
+          const cue = timed.cues[ci], text = typeof source === 'string' ? source : source.t;
+          if (!cue || !finite(cue.start) || !finite(cue.end) || cue.start !== cueStart || cue.end <= cue.start || cue.end > timed.end) bad();
+          cueStart = cue.end;
+          return { text, sub: subText(text), start: cue.start, end: cue.end, hold: 0, dur: cue.end - cue.start };
+        });
+        if (cueStart !== timed.end) bad();
+        previous = timed.end;
+        return { ...pg, index: idx, start: timed.start, speechEnd: timed.end, end: timed.end, cues };
+      });
+      if (previous !== line.duration) bad();
+      return { pages: exact, duration: line.duration, gap: 0 };
+    }
+    const voice = opts.voice || null;
+    const V = { ...VOICE, ...(opts.pace || {}) };   // META.pace: { maxHold, gap } loosens a voiced film's pauses (tight by default)
+    const gap = voice ? V.gap : opts.gap ?? GAP;
+    let t = 0;
+    const out = pages.map((pg, idx) => {
+      const start = t;
+      let ct = start + (voice ? VOICE.lead : LEAD);
+      const cues = pg.cues.map((c, ci) => {
+        const text = typeof c === 'string' ? c : c.t;
+        const hold = typeof c === 'string' ? 0 : c.hold || 0;
+        const v = voiceOf(voice, idx, ci, text);
+        if (v && v.o != null) {
+          // cut from a whole-page utterance: the segment already holds its natural pauses (v.o = speech onset inside it)
+          const h = ci === pg.cues.length - 1 || v.join ? 0 : Math.min(hold, V.maxHold);   // join: spoken straight into the next cue
+          const cue = { text, sub: subText(text), start: ct + v.o, end: ct + v.d, hold: h, audio: v.f, audioAt: ct, dur: v.d, k: v.k };
+          ct += v.d + h;
+          return cue;
+        }
+        if (v) {
+          // the page's last cue: no hold, short pause — the page turn itself is the breath
+          const lastCue = ci === pg.cues.length - 1;
+          const pause = lastCue ? VOICE.pageEnd : /[。？！?!.]$/.test(text) ? VOICE.stop : VOICE.comma, h = lastCue ? 0 : Math.min(hold, V.maxHold);
+          const cue = { text, sub: subText(text), start: ct, end: ct + v.d + pause * 0.9, hold: h, audio: v.f, audioAt: ct, dur: v.d, k: v.k };
+          ct += v.d + pause + h;
+          return cue;
+        }
+        const d = cueDur(text);
+        const cue = { text, sub: subText(text), start: ct, end: ct + d - BREATH * 0.5, hold };
+        ct += d + hold;
+        return cue;
+      });
+      const speechEnd = ct;
+      const after = pg.after || 0;   // extra seconds after the page's last line before it turns (lets the picture settle and sink in)
+      const last = idx === pages.length - 1;
+      const end = speechEnd + after + (last ? pg.tail ?? V.tail : gap);   // pg.tail / META.pace.tail: a longer ending hold (a brand's sign-off)
+      t = end;
+      return { ...pg, index: idx, start, speechEnd, end, cues };
+    });
+    return { pages: out, duration: t, gap };
+  }
+
+  /**
+   * Sound effects / music beds: page.sfx = [{ f, at, until?, vol?, fin?, fout?, loop?, duck?, rate? }] → absolute
+   * [{ f, t0, t1, vol, fin, fout, loop, duck, rate }]. at / until: page seconds, [cueIndex, dt] (cue start + dt), 'end' (page end)
+   * or { page: 'p05', at } (another page). Without until a clip plays once to its natural end. vol in dB.
+   */
+  function sfxTimes(L) {
+    const byId = Object.fromEntries(L.pages.map((p) => [p.id, p]));
+    const when = (pg, a) => {
+      if (a == null) return null;
+      if (typeof a === 'number') return pg.start + a;
+      if (a === 'end') return pg.end;
+      if (Array.isArray(a)) return (pg.cues[a[0]] ? pg.cues[a[0]].start : pg.speechEnd) + (a[1] || 0);
+      if (a.page) { const q = byId[a.page]; return a.at === 'end' || a.at == null ? q.end : when(q, a.at); }
+      return null;
+    };
+    return L.pages.flatMap((pg) => (pg.sfx || []).map((s) => ({
+      f: s.f, t0: when(pg, s.at ?? 0), t1: when(pg, s.until), vol: s.vol ?? 0, fin: s.fin ?? 0, fout: s.fout ?? 0,
+      loop: !!s.loop, duck: s.duck ?? 0, rate: s.rate ?? 1, from: s.from ?? 0,
+    })));
+  }
+
+  root.TIMING = { CPS, BREATH, LEAD, GAP, FADE, END, FADE_OUT, VOICE, units, cueDur, subText, wordTime, layout, sfxTimes };
+})(typeof window !== 'undefined' ? window : globalThis);

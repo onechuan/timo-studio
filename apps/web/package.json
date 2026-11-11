@@ -8,14 +8,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@timotv/contracts": "workspace:*",
+    "lucide-react": "^1.70.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "@timotv/contracts": "workspace:*"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "vite": "^7.2.2",
-    "@vitejs/plugin-react": "^5.1.0",
     "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2"
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "vite": "^7.2.2"
   }
 }
