@@ -6,3 +6,5 @@ export interface TTSProvider {
     signal: AbortSignal;
   }): Promise<SpeechAudio>;
 }
+
+export * from './volcengine.js';

@@ -19,6 +19,7 @@ import {
   writeFilmScript,
   piGenerator,
   modelFailureMessages,
+  reviseScriptForDuration,
   type JsonGenerator,
 } from '@timotv/agent';
 import { narrateFilm } from '@timotv/speech';
@@ -221,6 +222,8 @@ export function productionHandler(
         script: (p, signal) => writeFilmScript(p, model(), signal),
         narrate: (production, signal) =>
           narrateFilm({ production, root, env, signal }),
+        reviseDuration: (production, targetMs, signal) =>
+          reviseScriptForDuration(production, targetMs, model(), signal),
         illustrateScene: (production, index, signal) =>
           illustrateFilmSceneProgram(production, index, model(), signal),
         reviewScene: sceneReviewer(root, env),

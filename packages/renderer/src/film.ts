@@ -1,12 +1,12 @@
 import { filmHtml, validateFilmTiming } from './preview.js';
 import type { Production } from '@timotv/contracts';
 import { projectAudioKey } from './media.js';
-import { mkdir, writeFile, rm, access, rename } from 'node:fs/promises';
+import { access, mkdir, writeFile, rm, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { chromium } from 'playwright-core';
 import ffmpeg from 'ffmpeg-static';
+import { createBrowserRuntime } from './browser-runtime.js';
 export interface FilmInput {
   production: Production;
   root: string;
@@ -40,6 +40,9 @@ function prefix(p: Production) {
   return `production/${p.projectId}/r${p.revision}`;
 }
 export { filmHtml, validateFilmTiming } from './preview.js';
+export async function preflightFfmpeg() {
+  await access(process.env.FFMPEG_PATH || (ffmpeg as unknown as string));
+}
 export async function composeFilm({
   production,
   root,
@@ -71,41 +74,20 @@ export async function renderFilm(input: FilmInput): Promise<Production> {
   const fps = 12,
     count = Math.ceil((p.durationMs! * fps) / 1000);
   if (count > 14400) throw new Error('Video exceeds frame limit');
-  let executablePath = process.env.CHROME_PATH;
-  for (const path of [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium',
-  ]) {
-    if (executablePath) break;
-    try {
-      await access(path);
-      executablePath = path;
-    } catch {}
-  }
-  if (!executablePath) throw new Error('Chrome not found; set CHROME_PATH');
   const videoFile = join(root, prefix(p), 'video.mp4');
   const pendingVideo = join(root, prefix(p), `video-${randomUUID()}.tmp.mp4`);
-  const browser = await chromium.launch({ executablePath, headless: true });
+  const runtime = createBrowserRuntime({ phase: 'rendering' });
+  let page: Awaited<ReturnType<typeof runtime.newFilmPage>> | undefined;
   try {
-    const page = await browser.newPage({
-      viewport:
-        p.aspectRatio === '9:16'
-          ? { width: 1080, height: 1920 }
-          : { width: 1920, height: 1080 },
-      deviceScaleFactor: 1,
-    });
-    await page.setContent(filmHtml(p, { controls: false }));
-    await page.evaluate(() => (window as any).__ready);
-    await page.evaluate(() => {
-      (window as any).requestAnimationFrame = () => 0;
-    });
+    page = await runtime.newFilmPage(p, signal);
     for (let i = 0; i < count; i++) {
       signal?.throwIfAborted();
-      await page.evaluate((t) => (window as any).renderAt(t), (i * 1000) / fps);
-      await page.screenshot({
-        path: join(frames, `${String(i).padStart(6, '0')}.png`),
-      });
+      const result = await page.renderAt((i * 1000) / fps);
+      const pageError = result.thrown || result.engine[0]?.message || result.pageErrors[0];
+      if (pageError) throw new Error(`页面渲染失败：${pageError}`);
+      await page.screenshot(
+        join(frames, `${String(i).padStart(6, '0')}.png`),
+      );
       if (i % 120 === 0) onProgress?.(`渲染 ${i}/${count}`);
     }
     const key = `${prefix(p)}/video.mp4`;
@@ -144,7 +126,8 @@ export async function renderFilm(input: FilmInput): Promise<Production> {
     await rm(pendingVideo, { force: true });
     throw error;
   } finally {
-    await browser.close();
+    await page?.close();
+    await runtime.close();
     await rm(frames, { recursive: true, force: true });
   }
 }

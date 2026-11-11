@@ -16,6 +16,13 @@ import { filmQueue, filmWorker } from '../../packages/queue/src/index.js';
 import { productionHandler } from '../../apps/worker/src/handlers/production.js';
 import type { JsonGenerator } from '../../packages/agent/src/director/index.js';
 import { isLegacyArtwork } from '../../packages/contracts/src/artwork.js';
+const testFailure = (publicMessage: string) => ({
+  code: 'TEST_FAILURE',
+  phase: 'illustrating' as const,
+  retryable: true,
+  publicMessage,
+  diagnosticId: randomUUID(),
+});
 loadEnvFile();
 describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
   '制作链路：测试模型 + 真实 PostgreSQL/Redis/系统配音/Chrome/FFmpeg',
@@ -173,6 +180,14 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
       expect(
         await readFile(join(root, doc.artifacts.preview!), 'utf8'),
       ).toContain('audio');
+      for (const scene of doc.scenes.filter(
+        (scene) => scene.review?.status === 'needs_attention',
+      ))
+        doc = await service.act(p.id, {
+          revision: doc.revision,
+          action: 'accept',
+          sceneId: scene.id,
+        });
       const revision = doc.revision,
         audio = doc.artifacts.audio;
       await service.act(p.id, { revision, action: 'export' });
@@ -272,7 +287,7 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         checkpoint,
         fresh.job.id,
         'illustrate',
-        'safe',
+        testFailure('safe'),
       );
       const retry = await store.claim(
         doc.projectId,
@@ -286,7 +301,7 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         retry.production,
         retry.job.id,
         'illustrate',
-        'safe',
+        testFailure('safe'),
       );
       const restart = await store.claim(
         doc.projectId,
@@ -393,7 +408,9 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
       const handler = productionHandler(db, root, model, async () => {
         throw new Error('SETTINGS_READ_FAILED');
       });
-      await expect(handler(claimed.job.id)).rejects.toThrow('制作失败');
+      await expect(handler(claimed.job.id)).rejects.toThrow(
+        '制作过程遇到未识别错误',
+      );
       const failed = await productionStore(db).get(p.id);
       expect(failed?.stage).toBe('failed');
       expect(failed?.jobId).toBeUndefined();
@@ -401,8 +418,13 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         where: { id: claimed.job.id },
       });
       expect(job.status).toBe('failed');
+      expect(job.errorCode).toBe('PRODUCTION_UNKNOWN_FAILED');
       expect(job.errorMessage).not.toContain('SETTINGS_READ_FAILED');
       expect(failed?.error).toBe(job.errorMessage);
+      expect(failed?.failure).toMatchObject({
+        code: 'PRODUCTION_UNKNOWN_FAILED',
+        phase: 'planning',
+      });
       expect(
         (await db.production.findUniqueOrThrow({ where: { projectId: p.id } }))
           .jobId,
@@ -435,7 +457,12 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
       await expect(
         runs.checkpoint({ ...p, revision: p.revision - 1 }, id, 80),
       ).rejects.toThrow();
-      await runs.fail({ ...p, revision: p.revision - 1 }, id, 'plan', 'safe');
+      await runs.fail(
+        { ...p, revision: p.revision - 1 },
+        id,
+        'plan',
+        testFailure('safe'),
+      );
       expect((await db.job.findUniqueOrThrow({ where: { id } })).status).toBe(
         'running',
       );
@@ -446,7 +473,7 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
       expect((await productionStore(db).get(p.projectId))?.brief.topic).toBe(
         'checkpoint',
       );
-      await runs.fail(p, id, 'plan', 'safe');
+      await runs.fail(p, id, 'plan', testFailure('safe'));
       expect((await productionStore(db).get(p.projectId))?.jobId).toBe(id);
       await db.job.update({ where: { id }, data: { status: 'running' } });
       const replacement = await db.job.create({
@@ -456,7 +483,7 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         where: { projectId: p.projectId },
         data: { jobId: replacement.id },
       });
-      await runs.fail(p, id, 'plan', 'safe');
+      await runs.fail(p, id, 'plan', testFailure('safe'));
       await expect(runs.checkpoint(p, id, 80)).rejects.toThrow();
       expect(
         (
@@ -473,7 +500,7 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         data: { jobId: id },
       });
       await runs.complete(p, id);
-      await runs.fail(p, id, 'plan', 'safe');
+      await runs.fail(p, id, 'plan', testFailure('safe'));
       await expect(runs.checkpoint(p, id, 20)).rejects.toThrow();
       expect((await db.job.findUniqueOrThrow({ where: { id } })).status).toBe(
         'succeeded',

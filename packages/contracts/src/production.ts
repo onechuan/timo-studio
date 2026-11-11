@@ -25,6 +25,8 @@ export const productionBriefSchema = z
     materials: z.string().trim().max(60000).default(''),
     // Persisted briefs from before content directions omit this field.
     contentType: contentTypeSchema.optional(),
+    narrationMode: z.enum(['ai', 'verbatim']).optional(),
+    sourceNarration: z.string().max(60000).optional(),
     durationSec: z.number().int().min(15).max(600).default(60),
     language: z.enum(['zh', 'en']).default('zh'),
     style: z.enum(['warm', 'chalk', 'tech', 'brand']).default('warm'),
@@ -33,9 +35,21 @@ export const productionBriefSchema = z
       .default('volcengine'),
     voice: z.string().trim().max(120).default(''),
   })
-  .refine(
-    (v) => !!(v.topic || v.materials),
-    '请输入想讲的主题，或附上文本资料',
+  .superRefine((v, ctx) => {
+    if (!(v.topic || v.materials))
+      ctx.addIssue({
+        code: 'custom',
+        message: '请输入想讲的主题，或附上文本资料',
+      });
+    if (v.narrationMode === 'verbatim' && !v.sourceNarration?.trim())
+      ctx.addIssue({
+        code: 'custom',
+        path: ['sourceNarration'],
+        message: '逐字原稿模式需要提供非空口播原稿',
+      });
+  })
+  .transform((v) =>
+    v.narrationMode === 'ai' ? { ...v, sourceNarration: undefined } : v,
   );
 export type ProductionBrief = z.infer<typeof productionBriefSchema>;
 const planned = z.object({
@@ -44,6 +58,7 @@ const planned = z.object({
   say: text.max(2000),
   visual: text.max(2000),
   layout: sceneLayoutSchema.optional(),
+  targetDurationSec: z.number().int().min(1).max(600).optional(),
   beats: z.array(text.max(500)).min(1).max(20),
 });
 export const storyboardPlanSchema = z
@@ -79,6 +94,7 @@ export const sceneSchema = z
     title: text.max(100),
     visual: text.max(2000),
     layout: sceneLayoutSchema.optional(),
+    targetDurationSec: z.number().int().min(1).max(600).optional(),
     artwork: sceneArtworkSchema.optional(),
     beats: z.array(text.max(500)).min(1).max(20),
     cues: z.array(cueSchema).min(1).max(40),
@@ -114,6 +130,17 @@ export const productionStageSchema = z.enum([
   'failed',
 ]);
 export type ProductionStage = z.infer<typeof productionStageSchema>;
+export interface DurationState {
+  status: 'estimating' | 'correcting' | 'accepted' | 'needs-input' | 'failed';
+  targetMs: number;
+  minMs: number;
+  maxMs: number;
+  estimatedMs?: number;
+  measuredMs?: number;
+  confidence?: number;
+  correctionRound: number;
+  policy?: 'target' | 'accepted-source';
+}
 export const filmVisualStateSchema = z
   .object({
     upstreamRevision: z.string().regex(/^[a-f0-9]{40}$/),
@@ -135,6 +162,7 @@ export interface Production {
   storyboard?: StoryboardPlan;
   scenes: FilmScene[];
   durationMs?: number;
+  durationState?: DurationState;
   visual?: FilmVisualState;
   timingSource?: 'audio-per-cue';
   artifacts: {
@@ -163,6 +191,7 @@ export const productionActionSchema = z
       'review',
       'repair',
       'accept',
+      'accept-duration',
     ]),
     feedback: z.string().trim().max(4000).optional(),
     restart: z.boolean().optional(),
@@ -196,6 +225,12 @@ export const activeProductionStages: ProductionStage[] = [
 export interface ProductionCapabilities {
   model: { configured: boolean; provider: string; model: string };
   voices: { volcengine: boolean; local: boolean; elevenlabs: boolean };
+  runtime?: {
+    database: { ready: boolean; code?: string };
+    queue: { ready: boolean; code?: string };
+    browser: { ready: boolean; code?: string };
+    ffmpeg: { ready: boolean; code?: string };
+  };
 }
 export const productionUpdateSchema = z
   .object({
@@ -206,3 +241,13 @@ export const productionUpdateSchema = z
   })
   .strict()
   .refine((v) => !!(v.brief || v.storyboard || v.scenes), '没有需要保存的内容');
+
+/** Includes duration failures saved before the explicit decision flow existed. */
+export function needsDurationDecision(p: Production): boolean {
+  return (
+    p.stage === 'failed' &&
+    (p.durationState?.status === 'needs-input' ||
+      (p.durationState?.status === 'failed' &&
+        p.failure?.code === 'DURATION_CONTENT_INSUFFICIENT'))
+  );
+}

@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@timotv/contracts": "workspace:*",
     "@timotv/core": "workspace:*"
   }
 }

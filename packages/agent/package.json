@@ -13,6 +13,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@timotv/contracts": "workspace:*"
+    "@earendil-works/pi-agent-core": "1.1.0",
+    "@earendil-works/pi-ai": "1.1.0",
+    "@timotv/contracts": "workspace:*",
+    "typebox": "1.3.36",
+    "zod": "^3.25.76"
   }
 }

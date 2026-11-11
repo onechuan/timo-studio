@@ -1,6 +1,8 @@
+import { Play, Settings2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Projects } from '../features/projects/Projects.js';
 import { Workspace } from '../features/projects/Workspace.js';
+import { SettingsPage } from '../features/settings/SettingsPage.js';
 export function App() {
   const [id, setId] = useState(location.hash.slice(1));
   useEffect(() => {
@@ -10,27 +12,34 @@ export function App() {
   }, []);
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <a className="brand" href="#">
-          <span className="brand-icon">▶</span>Timo<span>TV</span>
-        </a>
-        <div className="sidebar-label">工作空间</div>
-        <a className="nav active" href="#">
-          ▦ <span>我的项目</span>
-        </a>
-        <div className="sidebar-bottom">
-          <span className="dot" /> 本地工作室 <small>基础版本 · 项目管理</small>
-        </div>
-      </aside>
       <main>
-        <header>
-          <span>
-            工作空间{' '}
-            <span className="muted">/ {id ? '项目工作台' : '我的项目'}</span>
+        <header className="app-topbar">
+          <a className="brand" href="#">
+            <Play size={18} fill="currentColor" aria-hidden="true" />
+            <span className="brand-word">
+              Timo<span>TV</span>
+            </span>{' '}
+            <small>Studio</small>
+          </a>
+          <a href="#" className="home-link">
+            我的项目
+          </a>
+          <a href="#settings" className="settings-link" aria-label="服务配置">
+            <Settings2 size={15} />
+            服务配置
+          </a>
+          <span className="local-status">
+            <span className="dot" />
+            本地工作室
           </span>
-          <span className="badge">AI 视频工作室</span>
         </header>
-        {id ? <Workspace key={id} id={id} /> : <Projects />}
+        {id === 'settings' ? (
+          <SettingsPage />
+        ) : id ? (
+          <Workspace key={id} id={id} />
+        ) : (
+          <Projects />
+        )}
       </main>
     </div>
   );

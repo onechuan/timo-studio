@@ -65,6 +65,25 @@ export class ProductionFailureError extends Error {
           : sanitizeCause(options.cause)),
     };
   }
+
+  static from(
+    failure: ProductionFailure,
+    options?: ErrorOptions,
+  ): ProductionFailureError {
+    const error = new ProductionFailureError(
+      {
+        code: failure.code,
+        phase: failure.phase,
+        retryable: failure.retryable,
+        publicMessage: failure.publicMessage,
+        context: failure.context,
+        causeSummary: failure.causeSummary,
+      },
+      options,
+    );
+    Object.defineProperty(error, 'failure', { value: failure });
+    return error;
+  }
 }
 
 export function toProductionFailure(

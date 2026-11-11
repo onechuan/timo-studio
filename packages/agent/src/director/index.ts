@@ -20,6 +20,12 @@ import {
   scriptScenesSchema,
   type Production,
 } from '@timotv/contracts';
+import {
+  allocateSceneBudgets,
+  durationBand,
+  estimateNarrationMs,
+} from './duration.js';
+export * from './duration.js';
 export * from './film-kit.js';
 export * from './page-lanes.js';
 export { illustrateFilmSceneProgram } from './program.js';
@@ -73,9 +79,17 @@ export async function planFilm(
   const max = Math.max(2, Math.ceil((p.brief.durationSec / 60) * 4));
   if (storyboard.scenes.length > max)
     throw new Error('分镜页数超出目标时长，请重新规划');
+  const budgets = allocateSceneBudgets(storyboard.scenes, p.brief.durationSec);
+  const normalizedStoryboard = {
+    ...storyboard,
+    scenes: storyboard.scenes.map((scene, index) => ({
+      ...scene,
+      targetDurationSec: budgets[index],
+    })),
+  };
   return {
     ...p,
-    storyboard,
+    storyboard: normalizedStoryboard,
     scenes: [],
     artifacts: {},
     stage: 'approval',
@@ -88,6 +102,7 @@ export async function writeFilmScript(
   signal?: AbortSignal,
 ): Promise<Production> {
   if (!p.storyboard) throw new Error('缺少已批准的分镜');
+  if (p.brief.narrationMode === 'verbatim') return verbatimScript(p);
   const result = await model.generate(
     `${prompt('SCRIPT')}\n\n${loadContentSkill(p.brief.contentType, 'script')}`,
     JSON.stringify({
@@ -102,6 +117,31 @@ export async function writeFilmScript(
   const scenes = scriptScenesSchema.parse(
     (result.value as { scenes?: unknown })?.scenes,
   );
+  const next = scriptProduction(p, scenes, result.usage);
+  const estimate = estimateNarrationMs(next.scenes);
+  const band = durationBand(p.brief.durationSec);
+  next.durationState = {
+    ...band,
+    status: 'estimating',
+    estimatedMs: estimate.estimatedMs,
+    confidence: estimate.confidence,
+    correctionRound: 0,
+  };
+  if (
+    p.brief.durationSec >= 120 &&
+    (estimate.estimatedMs < band.targetMs * 0.85 ||
+      estimate.estimatedMs > band.targetMs * 1.15)
+  )
+    return reviseScriptForDuration(next, band.targetMs, model, signal);
+  return next;
+}
+
+function scriptProduction(
+  p: Production,
+  scenes: ReturnType<typeof scriptScenesSchema.parse>,
+  generatedUsage: { input: number; output: number },
+): Production {
+  if (!p.storyboard) throw new Error('缺少已批准的分镜');
   if (
     scenes.map((s) => s.id).join('|') !==
     p.storyboard.scenes.map((s) => s.id).join('|')
@@ -117,13 +157,197 @@ export async function writeFilmScript(
         visual: approved.visual,
         beats: approved.beats,
         layout: approved.layout,
+        targetDurationSec: approved.targetDurationSec,
         cues: s.cues.map(({ id, text }) => ({ id, text })),
       };
     }),
     stage: 'narrating',
     artifacts: {},
-    usage: usage(p, result.usage),
+    durationMs: undefined,
+    timingSource: undefined,
+    usage: usage(p, generatedUsage),
   };
+}
+
+function verbatimSegments(source: string): string[] {
+  const segments: string[] = [];
+  let current = '';
+  for (const character of source) {
+    current += character;
+    if (/[。！？!?；;\n]/u.test(character)) {
+      if (current.trim()) segments.push(current);
+      else if (segments.length) segments[segments.length - 1] += current;
+      current = '';
+    }
+  }
+  if (current) {
+    if (current.trim()) segments.push(current);
+    else if (segments.length) segments[segments.length - 1] += current;
+  }
+  return segments;
+}
+
+function verbatimScript(p: Production): Production {
+  const source = p.brief.sourceNarration;
+  if (!source) throw new Error('VERBATIM_SEGMENTATION_FAILED');
+  const segments = verbatimSegments(source);
+  if (!p.storyboard || segments.length < p.storyboard.scenes.length)
+    throw new Error('VERBATIM_SEGMENTATION_FAILED');
+  const weights = p.storyboard.scenes.map(
+    (scene) => scene.targetDurationSec ?? 1,
+  );
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+  const scenes = p.storyboard.scenes.map((scene, sceneIndex) => ({
+    scene,
+    remainingScenes: p.storyboard!.scenes.length - sceneIndex - 1,
+  }));
+  let cursor = 0;
+  const filmScenes = scenes.map(({ scene, remainingScenes }, sceneIndex) => {
+    const remainingSegments = segments.length - cursor;
+    const desired = Math.max(
+      1,
+      Math.round((weights[sceneIndex]! / totalWeight) * segments.length),
+    );
+    const take =
+      sceneIndex === scenes.length - 1
+        ? remainingSegments
+        : Math.min(desired, remainingSegments - remainingScenes);
+    const cues = segments.slice(cursor, cursor + take).map((text, index) => ({
+      id: `${scene.id}-c${String(index).padStart(2, '0')}`,
+      text,
+    }));
+    cursor += take;
+    return {
+      id: scene.id,
+      title: scene.title,
+      visual: scene.visual,
+      beats: scene.beats,
+      layout: scene.layout,
+      targetDurationSec: scene.targetDurationSec,
+      cues,
+    };
+  });
+  if (
+    filmScenes
+      .flatMap((scene) => scene.cues)
+      .map((cue) => cue.text)
+      .join('') !== source
+  )
+    throw new Error('VERBATIM_SEGMENTATION_FAILED');
+  const band = durationBand(p.brief.durationSec);
+  const estimate = estimateNarrationMs(filmScenes);
+  return {
+    ...p,
+    scenes: filmScenes,
+    stage: 'narrating',
+    artifacts: {},
+    durationState: {
+      ...band,
+      status: 'estimating',
+      estimatedMs: estimate.estimatedMs,
+      confidence: estimate.confidence,
+      correctionRound: 0,
+    },
+  };
+}
+
+export async function reviseScriptForDuration(
+  p: Production,
+  targetMs: number,
+  model: JsonGenerator,
+  signal?: AbortSignal,
+): Promise<Production> {
+  if (!p.storyboard) throw new Error('缺少已批准的分镜');
+  if (p.brief.narrationMode === 'verbatim') return p;
+  const estimate = estimateNarrationMs(p.scenes);
+  // Only use durationMs when it belongs to the current, synthesized script.
+  const measuredMs =
+    p.artifacts.audio && p.durationMs && p.durationMs > 0
+      ? p.durationMs
+      : undefined;
+  const baselineMs = measuredMs ?? estimate.estimatedMs;
+  const expansionRatio = baselineMs > 0 ? targetMs / baselineMs : 1;
+  const weights = p.scenes.map(
+    (scene, index) =>
+      scene.targetDurationSec ??
+      p.storyboard!.scenes[index]?.targetDurationSec ??
+      1,
+  );
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const perScene = p.scenes.map((scene, index) => {
+    const target = Math.round((targetMs * weights[index]!) / totalWeight);
+    const timed =
+      measuredMs &&
+      scene.cues.every(
+        (c) =>
+          Number.isFinite(c.startMs) &&
+          Number.isFinite(c.endMs) &&
+          c.endMs! > c.startMs!,
+      );
+    const actual = timed
+      ? scene.cues.reduce((sum, c) => sum + c.endMs! - c.startMs!, 0)
+      : undefined;
+    const estimated = estimate.sceneMs[index] ?? 0;
+    const units = scene.cues.reduce(
+      (sum, c) => sum + (c.text.match(/[\p{L}\p{N}]/gu)?.length ?? 0),
+      0,
+    );
+    const baseline =
+      actual ??
+      (measuredMs && estimate.estimatedMs > 0
+        ? (estimated * measuredMs) / estimate.estimatedMs
+        : estimated);
+    return {
+      sceneId: scene.id,
+      targetMs: target,
+      estimatedMs: estimated,
+      measuredMs: actual,
+      currentTextUnits: units,
+      targetTextUnits:
+        baseline > 0 ? Math.round((units * target) / baseline) : undefined,
+    };
+  });
+  const result = await model.generate(
+    `${prompt('SCRIPT')}\n\n${loadContentSkill(p.brief.contentType, 'script')}\n\n# 时长校正\n只调整口播篇幅，不新增无依据事实或空洞填充。保持分镜 ID、顺序和内容边界。以结构化 targetMs 为时长目标；主题标题里的时长描述不能覆盖它。优先使用 measuredMs、每页实测时长和 targetTextUnits 调整篇幅，补充解释、推导和有依据的例子；超时时删减重复内容。`,
+    JSON.stringify({
+      topic: p.brief.topic,
+      materials: p.brief.materials,
+      storyboard: p.storyboard,
+      currentScenes: p.scenes.map((scene) => ({
+        ...scene,
+        cues: scene.cues.map(({ id, text }) => ({ id, text })),
+      })),
+      targetMs,
+      estimatedMs: estimate.estimatedMs,
+      estimatedDeficitMs: targetMs - estimate.estimatedMs,
+      measuredMs,
+      measuredDeficitMs:
+        measuredMs === undefined ? undefined : targetMs - measuredMs,
+      expansionRatio,
+      perScene,
+    }),
+    signal,
+  );
+  const scenes = scriptScenesSchema.parse(
+    (result.value as { scenes?: unknown })?.scenes,
+  );
+  const revised = scriptProduction(p, scenes, result.usage);
+  const revisedEstimate = estimateNarrationMs(revised.scenes);
+  const projectedMs =
+    estimate.estimatedMs > 0
+      ? (revisedEstimate.estimatedMs * baselineMs) / estimate.estimatedMs
+      : revisedEstimate.estimatedMs;
+  if (Math.abs(projectedMs - targetMs) >= Math.abs(baselineMs - targetMs))
+    return { ...p, usage: revised.usage };
+
+  revised.durationState = {
+    ...durationBand(p.brief.durationSec),
+    status: 'estimating',
+    estimatedMs: revisedEstimate.estimatedMs,
+    confidence: revisedEstimate.confidence,
+    correctionRound: p.durationState?.correctionRound ?? 0,
+  };
+  return revised;
 }
 
 /** Generate one independently retryable, measured scene. Never persist provider output before validation. */

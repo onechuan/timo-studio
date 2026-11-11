@@ -10,7 +10,7 @@ import {
 } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   PrismaClient,
   productionStore,
@@ -26,6 +26,13 @@ import type {
   Production,
   SceneReview,
 } from '../../packages/contracts/src/index.js';
+const testFailure = (publicMessage: string) => ({
+  code: 'TEST_FAILURE',
+  phase: 'illustrating' as const,
+  retryable: true,
+  publicMessage,
+  diagnosticId: randomUUID(),
+});
 import { isLegacyArtwork } from '../../packages/contracts/src/artwork.js';
 import type { VisionGenerator } from '../../packages/agent/src/runtime/vision.js';
 loadEnvFile();
@@ -442,7 +449,7 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         second.production,
         second.job.id,
         'illustrate',
-        'owned test cleanup',
+        testFailure('owned test cleanup'),
       );
     });
   },
