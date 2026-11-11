@@ -6,6 +6,7 @@ import {
   captureSceneReview,
 } from '../packages/renderer/src/review.js';
 import { hashProgramSource } from '../packages/renderer/src/program.js';
+import { animationScene } from './fixtures/animation-v2.js';
 export const reviewFixture = (): Production => ({
   projectId: 'capture-test',
   revision: 1,
@@ -46,6 +47,35 @@ it('samples global boundaries and uniformly limits cues with omissions', () => {
   expect(result.omittedCueIds).toHaveLength(18);
   expect(result.omittedCueIds).not.toContain('q0');
   expect(result.omittedCueIds).not.toContain('q39');
+});
+it('samples cue boundaries, action midpoints, and the held end state', () => {
+  const scene = animationScene();
+  const samples = planReviewSamples(scene).times;
+  expect(samples).toEqual(
+    expect.arrayContaining([0, 1000, 1999, 2000, 3000, 3999, 4000, 5000, 5999]),
+  );
+  // The assembly moves from cue 0 to 80% through cue 2; review its midpoint.
+  expect(samples).toContain(2800);
+});
+it('samples V3 camera starts and endpoints', () => {
+  const scene = reviewFixture().scenes[0]!;
+  scene.cues[0]!.endMs = 5000;
+  const source = `TIMO.visual('scene', P => {
+    P.cam([P.push(P.c(0, 0.9), 960, 540, 1.2), P.back(P.ce(0, -0.2))]);
+  });`;
+  scene.artwork = {
+    version: 3,
+    runtime: 'timotv-dsl-1',
+    intent: '镜头推近后回到全景',
+    source,
+    sourceHash: hashProgramSource(source),
+    style: 'warm-story',
+    extras: [],
+  };
+
+  expect(planReviewSamples(scene).times).toEqual(
+    expect.arrayContaining([900, 1180, 4800, 4999]),
+  );
 });
 it('fingerprints content/config but not revision, job, or prior reports', () => {
   const p = reviewFixture();

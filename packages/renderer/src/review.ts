@@ -6,14 +6,14 @@ import type {
 } from '@timotv/contracts';
 import { isLegacyArtwork } from '@timotv/contracts';
 import { createHash, randomUUID } from 'node:crypto';
-import { access, mkdir, realpath, lstat } from 'node:fs/promises';
+import { access, mkdir, readFile, realpath, lstat, rm } from 'node:fs/promises';
 import { join, relative, isAbsolute, sep } from 'node:path';
 import { chromium } from 'playwright-core';
 import { filmHtml, validateFilmTiming } from './preview.js';
 import { measureReviewFrame } from './browser-measure.js';
 
 /** Bump whenever deterministic rendering or measurement semantics change. */
-export const REVIEW_ENGINE_VERSION = 'animation-review-3.0';
+export const REVIEW_ENGINE_VERSION = 'animation-review-4.0';
 function stable(value: unknown): string {
   if (value === undefined) return 'null';
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
@@ -78,6 +78,27 @@ function actionTimes(scene: FilmScene): number[][] {
     }),
   );
 }
+function cameraTimes(scene: FilmScene): number[] {
+  if (scene.artwork?.version !== 3) return [];
+  const durations: Record<string, number> = {
+    push: 280,
+    pan: 300,
+    slam: 374,
+    shake: 250,
+    back: 500,
+  };
+  const times: number[] = [];
+  const pattern =
+    /\bP\.(push|pan|slam|shake|back)\(\s*P\.(c|ce)\(\s*(\d+)(?:\s*,\s*(-?\d+(?:\.\d+)?))?\s*\)/g;
+  for (const match of scene.artwork.source.matchAll(pattern)) {
+    const cue = scene.cues[Number(match[3])];
+    const base = match[2] === 'ce' ? cue?.endMs : cue?.startMs;
+    if (base === undefined) continue;
+    const atMs = base + Number(match[4] ?? 0) * 1000;
+    times.push(atMs, atMs + durations[match[1]!]!);
+  }
+  return times;
+}
 function uniform<T>(values: T[], count: number): T[] {
   if (values.length <= count) return values;
   return Array.from(
@@ -96,7 +117,12 @@ export function planReviewSamples(scene: FilmScene): {
     if (times.size < 24)
       times.add(Math.max(first, Math.min(last, Math.floor(t))));
   };
-  for (const cue of chosen) add((cue.startMs! + cue.endMs!) / 2);
+  for (const cue of chosen) {
+    if (scene.cues.length <= 7) add(cue.startMs!);
+    add((cue.startMs! + cue.endMs!) / 2);
+    if (scene.cues.length <= 7) add(cue.endMs! - 1);
+  }
+  for (const time of cameraTimes(scene)) add(time);
   for (const keys of actionTimes(scene))
     for (let i = 0; i < keys.length; i++) {
       add(keys[i]);
@@ -317,7 +343,66 @@ export async function captureSceneReview(
       }
       if (plan.times.includes(time)) {
         const name = `${time}.png`;
-        await page.screenshot({ path: join(directory, name) });
+        const path = join(directory, name);
+        const repeatPath = join(directory, `${time}.repeat.png`);
+        await page.screenshot({ path });
+        const repeated = await page.evaluate(
+          ({ time, sceneId }) => {
+            try {
+              (window as any).renderAt(time);
+              return {
+                thrown: null,
+                engine: ((window as any).ENGINE?.errors ?? []).filter(
+                  (error: { page?: string }) => error.page === sceneId,
+                ),
+              };
+            } catch (error) {
+              return {
+                thrown: (error instanceof Error
+                  ? error.message
+                  : String(error)
+                ).slice(0, 600),
+                engine: [],
+              };
+            }
+          },
+          { time, sceneId: s.id },
+        );
+        const repeatError = repeated.thrown || repeated.engine[0]?.message;
+        if (repeatError) {
+          issues.push({
+            kind: 'runtime',
+            severity: 'error',
+            atMs: time,
+            elementIds: [],
+            what: String(repeatError).slice(0, 600),
+            fix: '修复重复渲染失败，确保同一时间点可以稳定重放。',
+          });
+          break;
+        }
+        try {
+          await page.screenshot({ path: repeatPath });
+          const [firstImage, repeatImage] = await Promise.all([
+            readFile(path),
+            readFile(repeatPath),
+          ]);
+          if (
+            createHash('sha256').update(firstImage).digest('hex') !==
+            createHash('sha256').update(repeatImage).digest('hex')
+          ) {
+            issues.push({
+              kind: 'runtime',
+              severity: 'error',
+              atMs: time,
+              elementIds: [],
+              what: '同一时间点重复渲染得到不同像素，页面程序不确定。',
+              fix: '移除随机数、系统时间、计时器或依赖上一次渲染的可变状态。',
+            });
+            break;
+          }
+        } finally {
+          await rm(repeatPath, { force: true });
+        }
         frames.push({
           key: [...prefix, name].join('/'),
           timeMs: time,

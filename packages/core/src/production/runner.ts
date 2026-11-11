@@ -452,7 +452,9 @@ export function createProductionRunner(
             }
             if (
               p.scenes[index].review?.issues.some(
-                (i) => i.kind === 'runtime' && i.severity === 'error',
+                (i) =>
+                  ['runtime', 'layout'].includes(i.kind) &&
+                  i.severity === 'error',
               )
             )
               throw new Error('画面无法渲染，请重绘问题页');
