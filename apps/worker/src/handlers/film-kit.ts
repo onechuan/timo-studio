@@ -4,8 +4,14 @@ import { resolve, sep } from 'node:path';
 import { z } from 'zod';
 
 import {
+  drawingStyleForProduction,
+  FRAMETELL_ENGINE_REVISION,
+  FRAMETELL_UPSTREAM_REVISION,
+  generateFilmKitPart,
+  planFilmKit,
   piVisionGenerator,
   reviewModelConfig,
+  type JsonGenerator,
   type VisionGenerator,
 } from '@timotv/agent';
 import type {
@@ -50,6 +56,92 @@ type Capture = (
   signal?: AbortSignal,
   configRevision?: string,
 ) => Promise<FilmKitEvidence>;
+
+export function planProductionFilmKit(production: Production): Production {
+  const planned = planFilmKit(production);
+  return {
+    ...production,
+    visual: {
+      ...production.visual,
+      upstreamRevision: FRAMETELL_UPSTREAM_REVISION,
+      engineRevision: FRAMETELL_ENGINE_REVISION,
+      style: drawingStyleForProduction(production),
+      filmKit: planned.length
+        ? {
+            status: 'planned',
+            components: planned.map((item) => ({
+              ...item,
+              status: 'planned' as const,
+            })),
+          }
+        : { status: 'none', components: [] },
+    },
+  };
+}
+
+export async function generateProductionFilmKitPart(
+  production: Production,
+  name: string,
+  model: JsonGenerator,
+  signal?: AbortSignal,
+): Promise<Production> {
+  const kit = production.visual?.filmKit;
+  const component = kit?.components.find((item) => item.name === name);
+  if (
+    !kit ||
+    !component ||
+    !['planned', 'generating'].includes(component.status)
+  )
+    return production;
+
+  const generated = await generateFilmKitPart(
+    production,
+    component,
+    model,
+    signal,
+  );
+  const components = kit.components.map((item) =>
+    item.name === name
+      ? {
+          ...item,
+          status: 'checking' as const,
+          source: generated.source,
+          sourceHash: generated.sourceHash,
+          checkSource: generated.checkSource,
+          error: undefined,
+        }
+      : item,
+  );
+  const source = components
+    .filter((item) => item.source && item.status !== 'failed')
+    .map((item) => item.source!.trim())
+    .join('\n\n');
+  const pending = components.some((item) =>
+    ['planned', 'generating'].includes(item.status),
+  );
+  return {
+    ...production,
+    visual: {
+      ...production.visual!,
+      filmKit: {
+        ...kit,
+        status: pending ? 'generating' : source ? 'checking' : 'failed',
+        components,
+        source: source || undefined,
+        sourceHash: source
+          ? createHash('sha256').update(source, 'utf8').digest('hex')
+          : undefined,
+        fingerprint: undefined,
+        frames: undefined,
+        issues: undefined,
+      },
+    },
+    usage: {
+      input: (production.usage?.input ?? 0) + generated.usage.input,
+      output: (production.usage?.output ?? 0) + generated.usage.output,
+    },
+  };
+}
 
 function componentForIssue(
   kit: FilmKitState,

@@ -14,6 +14,11 @@ import { narrateFilm } from '@timotv/speech';
 import { composeFilm, renderFilm } from '@timotv/renderer';
 import { ZodError } from 'zod';
 import { sceneReviewer } from './review.js';
+import {
+  filmKitReviewer,
+  generateProductionFilmKitPart,
+  planProductionFilmKit,
+} from './film-kit.js';
 export function filmError(error: unknown) {
   if (error instanceof ArtworkValidationError) return error.message;
   if (error instanceof ZodError)
@@ -72,6 +77,10 @@ export function productionHandler(
         script: (p, signal) => writeFilmScript(p, model(), signal),
         narrate: (production, signal) =>
           narrateFilm({ production, root, env, signal }),
+        planFilmKit: async (production) => planProductionFilmKit(production),
+        generateFilmKitPart: (production, name, signal) =>
+          generateProductionFilmKitPart(production, name, model(), signal),
+        reviewFilmKit: filmKitReviewer(root, env),
         illustrateScene: (production, index, signal) =>
           illustrateFilmSceneProgram(production, index, model(), signal),
         reviewScene: sceneReviewer(root, env),

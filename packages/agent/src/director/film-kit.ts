@@ -19,12 +19,25 @@ export const KIT_MAX = 3;
 const ENGINE_ROOT = fileURLToPath(
   new URL('../../../drawing-engine/', import.meta.url),
 );
+const upstreamManifestSource = readFileSync(
+  join(ENGINE_ROOT, 'upstream.json'),
+  'utf8',
+);
+const upstreamManifest = JSON.parse(upstreamManifestSource) as {
+  revision: string;
+};
+export const FRAMETELL_UPSTREAM_REVISION = upstreamManifest.revision;
+export const FRAMETELL_ENGINE_REVISION = `sha256:${createHash('sha256')
+  .update(upstreamManifestSource, 'utf8')
+  .digest('hex')}`;
 const styleMap: Record<Production['brief']['style'], DrawingStyle> = {
   warm: 'warm-story',
   chalk: 'chalkboard',
   tech: 'tech-dark',
   brand: 'vector',
 };
+export const drawingStyleForProduction = (production: Production) =>
+  production.visual?.style ?? styleMap[production.brief.style];
 const generatedSchema = z
   .object({
     name: z.string(),
@@ -112,7 +125,7 @@ export function planFilmKit(production: Production): FilmKitItem[] {
     ...(production.storyboard?.scenes.map((scene) => scene.id) ?? []),
     ...production.scenes.map((scene) => scene.id),
   ]);
-  const style = production.visual?.style ?? styleMap[production.brief.style];
+  const style = drawingStyleForProduction(production);
   const reserved = reservedComponentNames();
   const styleNames = styleComponentNames(style);
   const seen = new Set<string>();
@@ -227,7 +240,7 @@ export async function generateFilmKitPart(
   );
   const user = JSON.stringify({
     item: parsedItem,
-    style: production.visual?.style ?? styleMap[production.brief.style],
+    style: drawingStyleForProduction(production),
     aspectRatio: production.aspectRatio,
     cell: kitCell(
       index,

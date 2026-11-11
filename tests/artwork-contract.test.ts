@@ -179,6 +179,11 @@ it('does not apply legacy element cue validation to V3 programs', () => {
 });
 
 it('accepts a bounded reusable Film Kit and rejects one-page components', () => {
+  expect(filmKitStateSchema.parse({ status: 'none', components: [] })).toEqual({
+    status: 'none',
+    components: [],
+  });
+
   expect(
     filmKitStateSchema.parse({
       status: 'partial',

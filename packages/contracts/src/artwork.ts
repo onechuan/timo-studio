@@ -459,6 +459,7 @@ export const filmKitReviewIssueSchema = z
 export const filmKitStateSchema = z
   .object({
     status: z.enum([
+      'none',
       'planned',
       'generating',
       'checking',
@@ -471,7 +472,7 @@ export const filmKitStateSchema = z
       .string()
       .regex(/^[a-f0-9]{64}$/)
       .optional(),
-    components: z.array(filmKitComponentResultSchema).min(1).max(3),
+    components: z.array(filmKitComponentResultSchema).max(3),
     fingerprint: z
       .string()
       .regex(/^[a-f0-9]{64}$/)
@@ -494,6 +495,16 @@ export const filmKitStateSchema = z
       ctx.addIssue({
         code: 'custom',
         message: '已生成的 Film Kit 必须保存合并源码',
+      });
+    if (kit.status !== 'none' && kit.components.length === 0)
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Film Kit 必须包含至少一个组件',
+      });
+    if (kit.status === 'none' && kit.components.length !== 0)
+      ctx.addIssue({
+        code: 'custom',
+        message: '无 Film Kit 时不能包含组件',
       });
     if (
       new Set(kit.components.map((item) => item.name)).size !==
