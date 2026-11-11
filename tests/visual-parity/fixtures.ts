@@ -71,12 +71,7 @@ async function prepareProject(
 ) {
   const temporaryRoot = await mkdtemp(join(tmpdir(), 'timotv-visual-parity-'));
   const projectRoot = join(temporaryRoot, 'project');
-  const sourceExample = join(
-    engineRoot,
-    'styles',
-    fixture.style,
-    'example',
-  );
+  const sourceExample = join(engineRoot, 'styles', fixture.style, 'example');
   await cp(sourceExample, projectRoot, { recursive: true });
   await rm(join(projectRoot, 'engine'), { recursive: true, force: true });
   await rm(join(projectRoot, 'engine_modules'), {

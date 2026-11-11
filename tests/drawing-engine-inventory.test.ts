@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const source = '/Users/onechuan/code/ai/open/frametell/packages/engine';
+const source =
+  process.env.FRAMETELL_ENGINE_ROOT ??
+  '/Users/onechuan/code/ai/open/frametell/packages/engine';
 const target = resolve('packages/drawing-engine');
 const excluded = new Set(['node_modules', 'package.json', 'upstream.json']);
 const patched = new Set([
@@ -49,19 +52,22 @@ async function digest(root: string, listing: string[]) {
 }
 
 describe('drawing engine migration inventory', () => {
-  it('copies every upstream engine file, allowing only reviewed compatibility patches', async () => {
-    const expected = await files(source);
-    const actual = await files(target);
-    const expectedWithAdditions = [...expected, ...additions].sort();
-    const unchanged = expected.filter((file) => !patched.has(file));
+  it.runIf(existsSync(source))(
+    'copies every upstream engine file, allowing only reviewed compatibility patches',
+    async () => {
+      const expected = await files(source);
+      const actual = await files(target);
+      const expectedWithAdditions = [...expected, ...additions].sort();
+      const unchanged = expected.filter((file) => !patched.has(file));
 
-    expect(actual).toEqual(expectedWithAdditions);
-    const [copied, upstream] = await Promise.all([
-      digest(target, unchanged),
-      digest(source, unchanged),
-    ]);
-    expect(copied).toBe(upstream);
-  });
+      expect(actual).toEqual(expectedWithAdditions);
+      const [copied, upstream] = await Promise.all([
+        digest(target, unchanged),
+        digest(source, unchanged),
+      ]);
+      expect(copied).toBe(upstream);
+    },
+  );
 
   it('contains all 42 styles and shared fonts', async () => {
     const styles = await readdir(resolve(target, 'styles'), {
