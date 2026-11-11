@@ -12,6 +12,8 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm build:packages && pnpm -r typecheck && tsc --noEmit",
     "test": "pnpm build:packages && vitest run",
+    "engine:audit": "node scripts/sync-frametell-engine.mjs --check",
+    "engine:sync": "node scripts/sync-frametell-engine.mjs --apply",
     "test:integration": "pnpm build:packages && RUN_INTEGRATION=1 vitest run tests/integration",
     "test:e2e": "playwright test",
     "db:generate": "pnpm --filter @timotv/db generate",
