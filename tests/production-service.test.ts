@@ -23,6 +23,7 @@ function fixture(
 ) {
   let enabled = configured;
   let doc: Production | null = null;
+  const claimed: string[] = [];
   const service = new ProductionService(
     {
       get: async () => doc,
@@ -37,7 +38,16 @@ function fixture(
       },
       claim: async (_id, rev, stage, type) => {
         if (doc?.revision !== rev || doc.jobId) throw new Error('conflict');
-        doc = { ...doc!, revision: rev + 1, stage, jobId: 'job1' };
+        const keepsEdit = type === 'export' || type === 'edit-export';
+        const revision = keepsEdit ? rev : rev + 1;
+        doc = {
+          ...doc!,
+          revision,
+          stage,
+          jobId: 'job1',
+          ...(keepsEdit ? {} : { edit: undefined }),
+        };
+        claimed.push(type);
         return { production: doc, job: { id: 'job1', type } };
       },
       failSubmission: async () => {},
@@ -60,10 +70,41 @@ function fixture(
   return {
     service,
     read: () => doc,
+    claimed,
     enable: () => {
       enabled = true;
     },
   };
+}
+const editRuntime = {
+  database: { ready: true },
+  queue: { ready: true },
+  browser: { ready: false, code: 'REVIEW_BROWSER_MISSING' },
+  ffmpeg: { ready: true },
+};
+function readyFilm(f: ReturnType<typeof fixture>) {
+  const p = f.read()!;
+  p.stage = 'ready';
+  p.durationMs = 4000;
+  p.artifacts = {
+    audio: 'production/project1/r0/audio.wav',
+    subtitles: 'production/project1/r0/subtitles.srt',
+    video: 'production/project1/r0/video.mp4',
+  };
+  p.scenes = [
+    {
+      id: 's',
+      title: '测试',
+      visual: '测试',
+      beats: ['测试'],
+      cues: [
+        { id: 'c1', text: '第一句', startMs: 0, endMs: 1500 },
+        { id: 'c2', text: '第二句', startMs: 1500, endMs: 3000 },
+        { id: 'c3', text: '第三句', startMs: 3000, endMs: 4000 },
+      ],
+    },
+  ];
+  return p;
 }
 it('records the selected video pipeline when a production is created', async () => {
   const legacy = fixture();
@@ -535,6 +576,124 @@ it('changing only the target preserves measured narration and resets correction 
     correctionRound: 0,
     status: 'estimating',
   });
+});
+
+it('saves an edit on top of an exported film and derives its subtitles', async () => {
+  const f = fixture(true, false, editRuntime);
+  await f.service.create('project1', brief);
+  const p = readyFilm(f);
+  const saved = await f.service.update('project1', {
+    revision: 0,
+    edit: { clips: [{ id: 'a', sourceInMs: 1000, sourceOutMs: 3000 }] },
+  });
+  expect(saved.stage).toBe('ready');
+  expect(saved.durationMs).toBe(4000);
+  expect(saved.artifacts).toEqual(p.artifacts);
+  expect(saved.edit?.source).toMatchObject({
+    videoKey: p.artifacts.video,
+    durationMs: 4000,
+    fps: 12,
+  });
+  expect(saved.edit?.subtitles).toEqual([
+    { cueId: 'c1', text: '第一句', startMs: 0, endMs: 500 },
+    { cueId: 'c2', text: '第二句', startMs: 500, endMs: 2000 },
+  ]);
+});
+
+it('clears a stale edit when content changes and can reset it explicitly', async () => {
+  const f = fixture(true, false, editRuntime);
+  await f.service.create('project1', brief);
+  readyFilm(f);
+  const saved = await f.service.update('project1', {
+    revision: 0,
+    edit: { clips: [{ id: 'a', sourceInMs: 0, sourceOutMs: 2000 }] },
+  });
+  const cleared = await f.service.update('project1', {
+    revision: saved.revision,
+    brief: { ...brief, voice: 'new-voice' },
+  });
+  expect(cleared.edit).toBeUndefined();
+
+  const f2 = fixture(true, false, editRuntime);
+  await f2.service.create('project1', brief);
+  readyFilm(f2);
+  const kept = await f2.service.update('project1', {
+    revision: 0,
+    edit: { clips: [{ id: 'a', sourceInMs: 0, sourceOutMs: 2000 }] },
+  });
+  const reset = await f2.service.update('project1', {
+    revision: kept.revision,
+    edit: null,
+  });
+  expect(reset.edit).toBeUndefined();
+  expect(reset.artifacts.video).toBe(kept.artifacts.video);
+});
+
+it('requires an exported film before saving an edit', async () => {
+  const f = fixture(true, false, editRuntime);
+  await f.service.create('project1', brief);
+  const p = f.read()!;
+  p.stage = 'ready';
+  p.durationMs = 1000;
+  p.scenes = [
+    {
+      id: 's',
+      title: '测试',
+      visual: '测试',
+      beats: ['测试'],
+      cues: [{ id: 'c', text: '句子', startMs: 0, endMs: 1000 }],
+    },
+  ];
+  await expect(
+    f.service.update('project1', {
+      revision: 0,
+      edit: { clips: [{ id: 'a', sourceInMs: 0, sourceOutMs: 1000 }] },
+    }),
+  ).rejects.toMatchObject({ code: 'INVALID_STAGE' });
+  p.artifacts.video = 'production/project1/r0/video.mp4';
+  await expect(
+    f.service.update('project1', {
+      revision: 0,
+      edit: { clips: [{ id: 'a', sourceInMs: 0, sourceOutMs: 2000 }] },
+    }),
+  ).rejects.toMatchObject({ code: 'INVALID_EDIT' });
+});
+
+it('submits edit-export without a browser and without bumping the revision', async () => {
+  const f = fixture(true, false, editRuntime);
+  await f.service.create('project1', brief);
+  readyFilm(f);
+  const saved = await f.service.update('project1', {
+    revision: 0,
+    edit: { clips: [{ id: 'a', sourceInMs: 0, sourceOutMs: 2000 }] },
+  });
+  const claimed = await f.service.act('project1', {
+    revision: saved.revision,
+    action: 'edit-export',
+  });
+  expect(claimed.stage).toBe('rendering');
+  expect(f.claimed).toContain('edit-export');
+  expect(f.read()?.revision).toBe(saved.revision);
+  expect(f.read()?.edit).toEqual(saved.edit);
+});
+
+it('rejects exporting an edit whose source has changed', async () => {
+  const f = fixture(true, false, editRuntime);
+  await f.service.create('project1', brief);
+  const p = readyFilm(f);
+  const saved = await f.service.update('project1', {
+    revision: 0,
+    edit: { clips: [{ id: 'a', sourceInMs: 0, sourceOutMs: 2000 }] },
+  });
+  p.scenes[0].cues[1].text = '改过的口播';
+  expect((await f.service.get('project1'))?.edit).toBeUndefined();
+  await expect(
+    f.service.act('project1', {
+      revision: saved.revision,
+      action: 'edit-export',
+    }),
+  ).rejects.toMatchObject({ code: 'INVALID_STAGE' });
+  expect(f.claimed).not.toContain('edit-export');
 });
 
 it.each(['missing-audio', 'missing-timing', 'unrelated-failure'] as const)(

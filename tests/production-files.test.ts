@@ -47,6 +47,58 @@ it('只允许当前项目登记的产物，不读取任意文件', async () => {
     ).status,
   ).toBe(404);
 });
+it('serves edited video and subtitles and denies unregistered siblings', async () => {
+  const videoKey = `production/${id}/r1/edit.mp4`;
+  const subtitlesKey = `production/${id}/r1/edit.srt`;
+  await Promise.all([
+    writeFile(join(root, videoKey), Buffer.from('edited-video')),
+    writeFile(
+      join(root, subtitlesKey),
+      Buffer.from('1\n00:00:00,000 --> 00:00:01,000\n字幕\n'),
+    ),
+  ]);
+  const service = {
+    get: async () => ({
+      projectId: id,
+      artifacts: {},
+      scenes: [],
+      edit: {
+        output: {
+          videoKey,
+          subtitlesKey,
+          durationMs: 1000,
+          exportedAt: '2026-11-13T00:00:00.000Z',
+        },
+      },
+    }),
+  } as unknown as ProductionService;
+  const edited = createApp({} as ProjectService, async () => {}, {
+    service,
+    root,
+  });
+  const video = await edited.request(
+    `/api/projects/${id}/production/files/${videoKey}`,
+  );
+  expect(video.status).toBe(200);
+  expect(video.headers.get('content-type')).toBe('video/mp4');
+  const range = await edited.request(
+    `/api/projects/${id}/production/files/${videoKey}`,
+    { headers: { range: 'bytes=7-11' } },
+  );
+  expect(range.status).toBe(206);
+  expect(await range.text()).toBe('video');
+  const subtitles = await edited.request(
+    `/api/projects/${id}/production/files/${subtitlesKey}`,
+  );
+  expect(subtitles.headers.get('content-type')).toContain('x-subrip');
+  expect(
+    (
+      await edited.request(
+        `/api/projects/${id}/production/files/production/${id}/r1/other.mp4`,
+      )
+    ).status,
+  ).toBe(404);
+});
 it('serves registered review frames as images and denies unregistered siblings', async () => {
   const frameKey = `production/${id}/r1/frame.png`;
   await writeFile(join(root, frameKey), Buffer.from('png-fixture'));

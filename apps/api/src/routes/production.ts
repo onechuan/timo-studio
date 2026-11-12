@@ -35,6 +35,9 @@ export function productionRoutes(service: ProductionService, root: string) {
     const allowed = p
       ? [
           ...Object.values(p.artifacts),
+          ...(p.edit?.output
+            ? [p.edit.output.videoKey, p.edit.output.subtitlesKey]
+            : []),
           ...p.scenes.flatMap((s) => s.cues.map((q) => q.audioKey)),
           ...p.scenes.flatMap((s) => s.review?.frames.map((f) => f.key) ?? []),
         ]

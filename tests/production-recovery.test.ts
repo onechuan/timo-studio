@@ -225,7 +225,9 @@ it('requeues only queued production jobs still owning the document', async () =>
     {
       where: {
         status: { in: ['queued', 'running'] },
-        type: { in: ['plan', 'produce', 'illustrate', 'export'] },
+        type: {
+          in: ['plan', 'produce', 'illustrate', 'export', 'edit-export'],
+        },
       },
       orderBy: { createdAt: 'asc' },
       take: 100,
@@ -248,12 +250,15 @@ it('terminal failure does not overwrite a newer owner', async () => {
   );
   expect(updateMany).not.toHaveBeenCalled();
 });
-it.each(['queued', 'running'])(
-  'terminal queue entry releases its %s durable owner as failed',
-  async (status) => {
+it.each([
+  ['queued', 'plan'],
+  ['running', 'edit-export'],
+] as const)(
+  'terminal queue entry releases its %s %s durable owner as failed',
+  async (status, type) => {
     const productionUpdate = vi.fn(async () => ({ count: 1 }));
     const jobUpdate = vi.fn();
-    const job = { id: 'j', projectId: 'p', status, type: 'plan' };
+    const job = { id: 'j', projectId: 'p', status, type };
     const row = {
       jobId: 'j',
       revision: 1,
@@ -281,7 +286,7 @@ it.each(['queued', 'running'])(
           jobId: null,
           data: expect.objectContaining({
             stage: 'failed',
-            failedAction: 'plan',
+            failedAction: type,
           }),
         }),
       }),

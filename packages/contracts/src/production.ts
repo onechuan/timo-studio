@@ -10,6 +10,7 @@ import {
 import { wholeFilmReviewSchema, type SceneReview } from './review.js';
 import type { ProductionFailure } from './production-failure.js';
 import type { VideoPipeline } from './settings.js';
+import { productionEditInputSchema, type ProductionEdit } from './edit.js';
 const text = z.string().trim().min(1);
 const id = text.max(80).regex(/^[a-zA-Z0-9_-]+$/);
 export const contentTypeSchema = z.enum(['general', 'explainer', 'product']);
@@ -174,7 +175,9 @@ export interface Production {
   jobId?: string;
   failure?: ProductionFailure;
   error?: string;
-  failedAction?: 'plan' | 'produce' | 'illustrate' | 'export';
+  failedAction?: 'plan' | 'produce' | 'illustrate' | 'export' | 'edit-export';
+  /** Edit decisions on top of the exported film; source snapshot guards staleness. */
+  edit?: ProductionEdit;
   reviewTask?: { sceneId: string; mode: 'review' | 'repair' | 'illustrate' };
   events: { at: string; message: string }[];
   usage?: { input: number; output: number };
@@ -188,6 +191,7 @@ export const productionActionSchema = z
       'produce',
       'illustrate',
       'export',
+      'edit-export',
       'review',
       'repair',
       'accept',
@@ -238,9 +242,14 @@ export const productionUpdateSchema = z
     brief: productionBriefSchema.optional(),
     storyboard: storyboardPlanSchema.optional(),
     scenes: scriptScenesSchema.optional(),
+    /** Null removes the current edit. */
+    edit: productionEditInputSchema.nullable().optional(),
   })
   .strict()
-  .refine((v) => !!(v.brief || v.storyboard || v.scenes), '没有需要保存的内容');
+  .refine(
+    (v) => !!(v.brief || v.storyboard || v.scenes || v.edit !== undefined),
+    '没有需要保存的内容',
+  );
 
 /** Includes duration failures saved before the explicit decision flow existed. */
 export function needsDurationDecision(p: Production): boolean {

@@ -23,7 +23,7 @@ import {
   type JsonGenerator,
 } from '@timotv/agent';
 import { narrateFilm } from '@timotv/speech';
-import { composeFilm, renderFilm } from '@timotv/renderer';
+import { composeFilm, renderEditedFilm, renderFilm } from '@timotv/renderer';
 import { ZodError } from 'zod';
 import { sceneReviewer } from './review.js';
 import {
@@ -240,6 +240,8 @@ export function productionHandler(
           composeFilm({ production, root, signal }),
         render: (production, signal) =>
           renderFilm({ production, root, signal }),
+        editExport: (production, signal) =>
+          renderEditedFilm({ production, root, signal }),
       };
       const pipeline = resolveVideoPipeline(
         production.videoPipeline ?? 'legacy-v3',

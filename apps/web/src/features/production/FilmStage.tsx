@@ -6,6 +6,7 @@ import {
   Volume2,
   Paintbrush,
   ScanEye,
+  Scissors,
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Production, StoryboardPlan } from '@timotv/contracts';
@@ -14,6 +15,7 @@ const tabs = [
   { id: 'storyboard', label: '分镜', Icon: FileText },
   { id: 'script', label: '口播', Icon: Volume2 },
   { id: 'export', label: '导出', Icon: Film },
+  { id: 'edit', label: '剪辑', Icon: Scissors },
   { id: 'review', label: '审片', Icon: ScanEye },
 ] as const;
 const clock = (value?: number) => {
@@ -70,19 +72,21 @@ export function FilmStage({
   const maxMs = duration?.maxMs ?? Math.round(targetMs * 1.1);
   return (
     <section className="film-stage" aria-label="画面工作台">
-      <div className="stage-bar">
-        <span>
-          <MonitorPlay size={15} />
-          画面工作台
-        </span>
-        <small>
-          {ratio} <span className="stage-divider">/</span>{' '}
-          {doc?.durationMs
-            ? `${(doc.durationMs / 1000).toFixed(1)} 秒`
-            : `目标 ${doc?.brief.durationSec ?? 60} 秒`}
-        </small>
-      </div>
-      {doc && (
+      {tab !== 'edit' && (
+        <div className="stage-bar">
+          <span>
+            <MonitorPlay size={15} />
+            画面工作台
+          </span>
+          <small>
+            {ratio} <span className="stage-divider">/</span>{' '}
+            {doc?.durationMs
+              ? `${(doc.durationMs / 1000).toFixed(1)} 秒`
+              : `目标 ${doc?.brief.durationSec ?? 60} 秒`}
+          </small>
+        </div>
+      )}
+      {doc && tab !== 'edit' && (
         <div className="duration-status" aria-live="polite">
           <span>
             <small>目标</small>
@@ -114,7 +118,7 @@ export function FilmStage({
           )}
         </div>
       )}
-      {tab !== 'export' && tab !== 'review' && (
+      {tab !== 'export' && tab !== 'review' && tab !== 'edit' && (
         <>
           {canDraw && (
             <div className="artwork-actions">

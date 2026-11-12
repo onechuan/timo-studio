@@ -7,6 +7,7 @@ export interface Renderer {
 }
 
 export * from './film.js';
+export * from './edit.js';
 export * from './artwork.js';
 export * from './motion.js';
 export * from './review.js';

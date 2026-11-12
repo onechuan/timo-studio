@@ -1,15 +1,20 @@
 import {
+  buildEditSource,
+  deriveEditTimeline,
+  isEditCurrent,
   productionBriefSchema,
   needsDurationDecision,
   productionActionSchema,
   productionUpdateSchema,
   type Production,
+  type ProductionEditInput,
   type ProductionStage,
   type ProductionCapabilities,
   type VideoPipeline,
 } from '@timotv/contracts';
 import { DomainError } from '../projects/service.js';
-export type FilmJobType = 'plan' | 'produce' | 'illustrate' | 'export';
+export type FilmJobType =
+  'plan' | 'produce' | 'illustrate' | 'export' | 'edit-export';
 export interface ProductionStore {
   get(id: string): Promise<Production | null>;
   create(doc: Production): Promise<Production>;
@@ -44,7 +49,10 @@ export class ProductionService {
       'legacy-v3',
   ) {}
   async get(id: string) {
-    return this.store.get(id);
+    const p = await this.store.get(id);
+    // A stale edit must never reach the UI or the export action. Hide it
+    // without rewriting the row so the original decision stays auditable.
+    return p?.edit && !isEditCurrent(p) ? { ...p, edit: undefined } : p;
   }
   async create(id: string, input: unknown) {
     const brief = productionBriefSchema.parse(input);
@@ -97,6 +105,35 @@ export class ProductionService {
       throw new DomainError('INVALID_STAGE', '仅能在分镜确认阶段修改分镜');
     if (v.scenes && !p.scenes.length)
       throw new DomainError('INVALID_STAGE', '系统尚未生成口播');
+    if (v.edit !== undefined) {
+      if (v.brief || v.storyboard || v.scenes)
+        throw new DomainError(
+          'INVALID_UPDATE',
+          '剪辑与主题、分镜或口播请分别保存',
+        );
+      if (v.edit === null) {
+        if (!p.edit) return p;
+        const recovering =
+          p.stage === 'failed' && p.failedAction === 'edit-export';
+        return this.store.save(
+          {
+            ...p,
+            revision: p.revision + 1,
+            edit: undefined,
+            ...(recovering
+              ? {
+                  stage: 'ready' as const,
+                  failure: undefined,
+                  error: undefined,
+                  failedAction: undefined,
+                }
+              : {}),
+          },
+          p.revision,
+        );
+      }
+      return this.saveEdit(p, v.edit);
+    }
     const next: Production = {
       ...p,
       revision: p.revision + 1,
@@ -107,6 +144,8 @@ export class ProductionService {
       artifacts: {},
       durationMs: undefined,
       reviewTask: undefined,
+      // Any content change invalidates what the exported film contained.
+      edit: undefined,
     };
     if (v.brief) {
       next.brief = v.brief;
@@ -196,6 +235,42 @@ export class ProductionService {
       next.stage = 'narrating';
     }
     return this.store.save(next, p.revision);
+  }
+  private async saveEdit(p: Production, input: ProductionEditInput) {
+    if (!p.artifacts.video || !p.durationMs || !p.scenes.length)
+      throw new DomainError('INVALID_STAGE', '请先导出视频，再进行剪辑');
+    if (
+      p.stage !== 'ready' &&
+      !(p.stage === 'failed' && p.failedAction === 'edit-export')
+    )
+      throw new DomainError('INVALID_STAGE', '请等待当前制作完成后再剪辑');
+    const source = buildEditSource(p);
+    let timeline;
+    try {
+      timeline = deriveEditTimeline(source, input.clips);
+    } catch (error) {
+      throw new DomainError(
+        'INVALID_EDIT',
+        error instanceof Error ? error.message : '剪辑范围无效',
+        422,
+      );
+    }
+    return this.store.save(
+      {
+        ...p,
+        revision: p.revision + 1,
+        stage: 'ready',
+        failure: undefined,
+        error: undefined,
+        failedAction: undefined,
+        edit: {
+          source,
+          clips: timeline.clips,
+          subtitles: timeline.subtitles,
+        },
+      },
+      p.revision,
+    );
   }
   async act(id: string, input: unknown) {
     const a = productionActionSchema.parse(input),
@@ -357,6 +432,35 @@ export class ProductionService {
         throw new DomainError('INVALID_STAGE', '请先审片，再按问题修正当前页');
       type = 'illustrate';
       stage = 'illustrating';
+    } else if (a.action === 'edit-export') {
+      if (
+        p.scenes.some(
+          (s) =>
+            s.review &&
+            ['needs_attention', 'failed', 'checking', 'repairing'].includes(
+              s.review.status,
+            ),
+        )
+      )
+        throw new DomainError(
+          'REVIEW_REQUIRED',
+          '请先修正或明确接受待确认的画面，再导出',
+        );
+      if (
+        !p.edit ||
+        !isEditCurrent(p) ||
+        !p.artifacts.video ||
+        !(
+          p.stage === 'ready' ||
+          (p.stage === 'failed' && p.failedAction === 'edit-export')
+        )
+      )
+        throw new DomainError(
+          'INVALID_STAGE',
+          '剪辑已过期，请重新保存剪辑后再导出',
+        );
+      type = 'edit-export';
+      stage = 'rendering';
     } else {
       if (
         p.scenes.some(
@@ -388,9 +492,11 @@ export class ProductionService {
     await this.needRuntime(
       type === 'export'
         ? ['database', 'queue', 'browser', 'ffmpeg']
-        : type === 'produce' || type === 'illustrate'
-          ? ['database', 'queue', 'browser']
-          : ['database', 'queue'],
+        : type === 'edit-export'
+          ? ['database', 'queue', 'ffmpeg']
+          : type === 'produce' || type === 'illustrate'
+            ? ['database', 'queue', 'browser']
+            : ['database', 'queue'],
     );
     await this.queue.health();
     const claimed = await this.store.claim(

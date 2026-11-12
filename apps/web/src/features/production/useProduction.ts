@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
+  EditClip,
   Production,
   ProductionCapabilities,
   StoryboardPlan,
@@ -98,6 +99,7 @@ export function useProduction(id: string) {
       | 'produce'
       | 'illustrate'
       | 'export'
+      | 'edit-export'
       | 'review'
       | 'repair'
       | 'accept'
@@ -147,6 +149,35 @@ export function useProduction(id: string) {
         body: JSON.stringify({ revision: saved.revision, action: 'produce' }),
       });
     });
+  const saveEdit = (clips: EditClip[]) =>
+    run(() =>
+      api<Production>(path, {
+        method: 'PUT',
+        body: JSON.stringify({ revision: doc!.revision, edit: { clips } }),
+      }),
+    );
+  const resetEdit = () =>
+    run(() =>
+      api<Production>(path, {
+        method: 'PUT',
+        body: JSON.stringify({ revision: doc!.revision, edit: null }),
+      }),
+    );
+  const exportEdit = (clips: EditClip[]) =>
+    run(async () => {
+      const saved = await api<Production>(path, {
+        method: 'PUT',
+        body: JSON.stringify({ revision: doc!.revision, edit: { clips } }),
+      });
+      receive(saved);
+      return api<Production>(path + '/actions', {
+        method: 'POST',
+        body: JSON.stringify({
+          revision: saved.revision,
+          action: 'edit-export',
+        }),
+      });
+    });
   const file = (key: string) =>
     '/api' +
     path +
@@ -168,6 +199,9 @@ export function useProduction(id: string) {
     saveBrief,
     saveBoard,
     saveScript,
+    saveEdit,
+    resetEdit,
+    exportEdit,
     file,
     boardDirty:
       !!doc && JSON.stringify(board) !== JSON.stringify(doc.storyboard),

@@ -18,6 +18,7 @@ import { FilmStage } from './FilmStage.js';
 import { SceneEditor, type StudioTab } from './SceneEditor.js';
 import { useProduction } from './useProduction.js';
 import { ReviewPanel } from './ReviewPanel.js';
+import { EditPanel } from './EditPanel.js';
 import '../../styles/production.css';
 const labels = {
   draft: '待规划',
@@ -183,6 +184,7 @@ type RecoveryAction =
   | 'produce'
   | 'illustrate'
   | 'export'
+  | 'edit-export'
   | 'review'
   | 'accept-duration';
 function ProductionFailureCard({
@@ -214,34 +216,38 @@ function ProductionFailureCard({
     (failure.phase === 'illustrating' || failure.phase === 'reviewing');
   const action: RecoveryAction = durationDecision
     ? 'accept-duration'
-    : resumeUnillustrated
-      ? doc.failedAction === 'illustrate'
-        ? 'illustrate'
-        : 'produce'
-      : failure.phase === 'reviewing' && sceneId
-        ? 'review'
-        : failure.phase === 'rendering'
-          ? 'export'
-          : failure.phase === 'illustrating'
-            ? 'illustrate'
-            : failure.phase === 'planning'
-              ? 'plan'
-              : doc.scenes.length
-                ? 'produce'
-                : 'approve';
+    : doc.failedAction === 'edit-export'
+      ? 'edit-export'
+      : resumeUnillustrated
+        ? doc.failedAction === 'illustrate'
+          ? 'illustrate'
+          : 'produce'
+        : failure.phase === 'reviewing' && sceneId
+          ? 'review'
+          : failure.phase === 'rendering'
+            ? 'export'
+            : failure.phase === 'illustrating'
+              ? 'illustrate'
+              : failure.phase === 'planning'
+                ? 'plan'
+                : doc.scenes.length
+                  ? 'produce'
+                  : 'approve';
   const actionSceneId =
     action === 'review' || (action === 'illustrate' && !resumeUnillustrated)
       ? sceneId
       : undefined;
   const label = durationDecision
     ? `按 ${measuredSeconds} 秒继续制作`
-    : resumeUnillustrated
-      ? '继续绘制剩余页面'
-      : failure.phase === 'reviewing' && sceneId
-        ? '重试当前页审片'
-        : failure.retryable
-          ? '重试失败步骤'
-          : '修正内容后重新开始';
+    : doc.failedAction === 'edit-export'
+      ? '重试剪辑导出'
+      : resumeUnillustrated
+        ? '继续绘制剩余页面'
+        : failure.phase === 'reviewing' && sceneId
+          ? '重试当前页审片'
+          : failure.retryable
+            ? '重试失败步骤'
+            : '修正内容后重新开始';
   return (
     <section className="production-failure-card" role="alert">
       <strong>
@@ -325,6 +331,7 @@ export function ProductionWorkspace({ id }: { id: string }) {
     setTab('export');
     void p.action('export');
   };
+  const deliverableVideo = doc?.edit?.output?.videoKey ?? doc?.artifacts.video;
   return (
     <section className="production" aria-label="视频制作工作台">
       <div className="production-toolbar">
@@ -346,14 +353,14 @@ export function ProductionWorkspace({ id }: { id: string }) {
             查看待处理审片
           </button>
         )}
-        {doc?.artifacts.video && !locked ? (
+        {deliverableVideo && !locked ? (
           <a
             className="download-mp4"
-            href={p.file(doc.artifacts.video)}
+            href={p.file(deliverableVideo)}
             download="TimoTV.mp4"
           >
             <Download size={15} />
-            下载 MP4
+            {doc?.edit?.output ? '下载剪辑成片' : '下载 MP4'}
           </a>
         ) : (
           <button
@@ -584,9 +591,11 @@ export function ProductionWorkspace({ id }: { id: string }) {
                             ? 'illustrate'
                             : doc.failedAction === 'export'
                               ? 'export'
-                              : doc.scenes.length
-                                ? 'produce'
-                                : 'approve',
+                              : doc.failedAction === 'edit-export'
+                                ? 'edit-export'
+                                : doc.scenes.length
+                                  ? 'produce'
+                                  : 'approve',
                       )
                     }
                   >
@@ -743,6 +752,21 @@ export function ProductionWorkspace({ id }: { id: string }) {
                 setSeekTime(ms);
                 setTab('storyboard');
               }}
+            />
+          ) : doc && tab === 'edit' ? (
+            <EditPanel
+              doc={doc}
+              locked={
+                locked ||
+                p.briefDirty ||
+                p.boardDirty ||
+                JSON.stringify(script) !== JSON.stringify(doc.scenes)
+              }
+              error={error}
+              saveEdit={(clips) => void p.saveEdit(clips)}
+              exportEdit={(clips) => void p.exportEdit(clips)}
+              resetEdit={() => void p.resetEdit()}
+              file={p.file}
             />
           ) : doc ? (
             <SceneEditor

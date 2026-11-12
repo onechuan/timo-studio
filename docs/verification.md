@@ -1,5 +1,7 @@
 # 初始化验证记录
 
+成片剪辑（2026-11-13）：新增 `Production.edit`、`edit-export` 任务和“剪辑”工作台。服务端按帧对齐片段、重排输出时间并派生字幕；导出使用单次 FFmpeg 滤镜图完成裁剪、静音/音量和拼接。验证：`pnpm test` 293 项通过、1 项可选测试跳过；`RUN_INTEGRATION=1 pnpm test tests/integration/renderer-edit.test.ts` 2 项通过，现场生成 12fps 三色段和三段正弦音，断言输出 30 帧、段序、蓝/红/绿首帧颜色、静音段 RMS、总时长、SRT 时间文本及临时文件清理；`PLAYWRIGHT_CHANNEL=chrome pnpm playwright test tests/e2e/edit.spec.ts` 桌面/手机 4 项通过，覆盖删除、右移、静音、保存/导出请求体和失败后“重试剪辑导出”；`pnpm typecheck` 全工作区及根测试 TypeScript 通过。本轮未重新渲染真实长片、未调用外部 AI 或 TTS，真实项目上的长片播放与字幕同步仍建议人工验收。
+
 播放器暂停修复（2026-11-08）：播放过程中每帧替换按钮 SVG，导致真实 pointerdown/pointerup 跨帧时点击目标被移除，160ms 按下回归测试可稳定复现暂停失败。按钮图标改为仅在状态变化时更新；动态画面与字幕不参与命中，点击交给稳定 stage 元素。桌面/手机横竖屏 4 项播放器回归通过，真实 sandbox 预览集成通过，Renderer 构建及测试 TypeScript 通过。现有作品实测按钮/画面/再次按钮三次暂停，400ms 后进度保持不动，SVG 节点跨帧保持连接，无页面错误。记录在 `.data/verification/player-pause/result.json`。已有预览刷新即可使用，无需重新生成配音或画面。
 
 逐页绘图升级（2026-11-08）：用结构化 artwork 取代固定中心节点图，加入构图选择、22 种统一风格矢量主体、真实句级显现、全文换行、对比度、背景/主体/文字图层与横竖屏安全区。导演和 PAGE 同时加载三种视觉风格；每页单独生成和保存，支持断点继续、全部重绘和指定 sceneId 单页重绘。有效草稿由代码调整独立插画和文字位置，自绘复合物件不被拆开移动；无法安全放置时按具体对象问题有限修复。

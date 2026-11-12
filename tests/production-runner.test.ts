@@ -1,12 +1,31 @@
 import { describe, it, expect } from 'vitest';
 import {
   createProductionRunner,
+  productionJobTimeoutMs,
   type ProductionRunStore,
 } from '../packages/core/src/production/runner.js';
 import { ProductionFailureError } from '../packages/core/src/production/failure.js';
 import type { ProductionFailure } from '../packages/contracts/src/production-failure.js';
 import type { Production, Job } from '../packages/contracts/src/index.js';
 describe('production runner', () => {
+  it('gives long exports a timeout budget proportional to film length', () => {
+    const minutes = (ms: number) => ms / 60_000;
+    expect(minutes(productionJobTimeoutMs('plan', 276_888))).toBe(20);
+    expect(minutes(productionJobTimeoutMs('export', 0))).toBe(30);
+    expect(minutes(productionJobTimeoutMs('export', 60_000))).toBe(30);
+    expect(minutes(productionJobTimeoutMs('export', 276_888))).toBeCloseTo(
+      56.17,
+      1,
+    );
+    expect(minutes(productionJobTimeoutMs('export', 3 * 60 * 60 * 1000))).toBe(
+      120,
+    );
+    expect(minutes(productionJobTimeoutMs('edit-export', 276_888))).toBe(20);
+    expect(minutes(productionJobTimeoutMs('edit-export', 60 * 60 * 1000))).toBe(
+      120,
+    );
+  });
+
   it('repairs only pages named by whole-film review and stops after two rounds', async () => {
     const repaired: string[] = [];
     let saved = {
@@ -344,7 +363,13 @@ describe('production runner', () => {
     });
   });
 
-  for (const type of ['plan', 'produce', 'illustrate', 'export'] as const)
+  for (const type of [
+    'plan',
+    'produce',
+    'illustrate',
+    'export',
+    'edit-export',
+  ] as const)
     it(`sequences ${type} and releases`, async () => {
       const calls: string[] = [];
       const production = {
@@ -381,6 +406,7 @@ describe('production runner', () => {
           illustrateScene: async (p) => op('illustrate')(p),
           compose: op('compose'),
           render: op('render'),
+          editExport: op('editExport'),
         }),
         () => 'safe',
       )('job');
@@ -391,7 +417,9 @@ describe('production runner', () => {
             ? ['narrate', 'illustrate', 'compose', 'complete']
             : type === 'illustrate'
               ? ['illustrate', 'compose', 'complete']
-              : ['render', 'complete'],
+              : type === 'export'
+                ? ['render', 'complete']
+                : ['editExport', 'complete'],
       );
     });
   for (const condition of ['terminal', 'obsolete', 'checkpoint'] as const)

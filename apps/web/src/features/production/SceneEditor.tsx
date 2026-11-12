@@ -1,7 +1,7 @@
 import { FileText, Save, Volume2, Download, Film } from 'lucide-react';
 import type { FilmScene, Production, StoryboardPlan } from '@timotv/contracts';
 import { sceneLayoutLabels, type SceneLayout } from '@timotv/contracts';
-export type StudioTab = 'storyboard' | 'script' | 'export' | 'review';
+export type StudioTab = 'storyboard' | 'script' | 'export' | 'review' | 'edit';
 export function SceneEditor({
   doc,
   board,
@@ -29,66 +29,79 @@ export function SceneEditor({
 }) {
   const scene = board?.scenes[selected];
   const spoken = script[selected];
-  if (tab === 'export')
+  if (tab === 'export') {
+    const output = doc.edit?.output;
+    const videoKey = output?.videoKey ?? doc.artifacts.video;
+    const files = [
+      { id: 'audio', key: doc.artifacts.audio, name: '下载配音', ext: 'WAV' },
+      {
+        id: 'subtitles',
+        key: output?.subtitlesKey ?? doc.artifacts.subtitles,
+        name: output ? '下载剪辑字幕' : '下载字幕',
+        ext: 'SRT',
+      },
+      {
+        id: 'video',
+        key: videoKey,
+        name: output ? '下载剪辑成片' : '下载视频',
+        ext: 'MP4',
+      },
+    ];
     return (
       <div className="export-pane">
         <div className="editor-intro">
           <Film size={18} />
           <div>
-            <h3>{doc.artifacts.video ? 'MP4 已导出' : '交付你的作品'}</h3>
+            <h3>
+              {output
+                ? '剪辑成片已导出'
+                : doc.artifacts.video
+                  ? 'MP4 已导出'
+                  : '交付你的作品'}
+            </h3>
             <p role="status">
               {doc.stage === 'rendering'
-                ? '正在生成 MP4，完成后可在这里播放和下载。'
-                : doc.artifacts.video
-                  ? '成片已准备好，可以播放检查或下载到本机。'
-                  : '完成制作后，配音、字幕和视频会出现在这里。'}
+                ? '正在生成视频，完成后可在这里播放和下载。'
+                : output
+                  ? '剪辑后的成片与字幕已准备好，可以播放检查或下载。'
+                  : doc.artifacts.video
+                    ? '成片已准备好，可以播放检查或下载到本机。'
+                    : '完成制作后，配音、字幕和视频会出现在这里。'}
             </p>
           </div>
         </div>
-        {doc.artifacts.video && (
+        {videoKey && (
           <div className="export-player">
             <video
-              aria-label="已导出 MP4"
+              aria-label={output ? '剪辑后的 MP4' : '已导出 MP4'}
               controls
               playsInline
               preload="metadata"
-              src={file(doc.artifacts.video)}
+              src={file(videoKey)}
               style={{ aspectRatio: doc.aspectRatio.replace(':', ' / ') }}
             />
           </div>
         )}
         <div className="export-files">
-          {(['audio', 'subtitles', 'video'] as const).map((key) => {
-            const artifact = doc.artifacts[key];
-            const name = {
-              audio: '下载配音',
-              subtitles: '下载字幕',
-              video: '下载视频',
-            }[key];
-            return artifact ? (
-              <a
-                className="download-file"
-                key={key}
-                href={file(artifact)}
-                download
-              >
+          {files.map(({ id, key, name, ext }) =>
+            key ? (
+              <a className="download-file" key={id} href={file(key)} download>
                 <Download size={17} />
                 <span>{name}</span>
-                <small>
-                  {key === 'audio' ? 'WAV' : key === 'video' ? 'MP4' : 'SRT'}
-                </small>
+                <small>{ext}</small>
               </a>
             ) : (
-              <div className="download-file unavailable" key={key}>
+              <div className="download-file unavailable" key={id}>
                 <Download size={17} />
                 <span>{name.replace('下载', '')}</span>
                 <small>尚未生成</small>
               </div>
-            );
-          })}
+            ),
+          )}
         </div>
       </div>
     );
+  }
   if (tab === 'script')
     return spoken ? (
       <div className="scene-editor">

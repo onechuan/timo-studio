@@ -72,7 +72,8 @@ export function productionStore(db: PrismaClient): ProductionStore {
         if (row.revision !== revision || row.jobId) throw conflict();
         const job = await tx.job.create({ data: { projectId, type } });
         const current = row.data as unknown as Production;
-        const nextRevision = type === 'export' ? revision : revision + 1;
+        const nextRevision =
+          type === 'export' || type === 'edit-export' ? revision : revision + 1;
         const next: Production = {
           ...current,
           stage,
@@ -90,6 +91,12 @@ export function productionStore(db: PrismaClient): ProductionStore {
                 mode: options.reviewMode ?? 'illustrate',
               }
             : undefined,
+          // Exporting never invalidates an edit; every content-producing job
+          // does, because its source film is about to change.
+          edit:
+            type === 'export' || type === 'edit-export'
+              ? current.edit
+              : undefined,
         };
         if (
           type === 'produce' &&
@@ -193,7 +200,7 @@ export function productionStore(db: PrismaClient): ProductionStore {
         jobId: undefined,
         failure,
         error: failure.publicMessage,
-        failedAction: job?.type as 'plan' | 'produce' | 'illustrate' | 'export',
+        failedAction: job?.type as NonNullable<Production['failedAction']>,
       };
       await db.$transaction([
         db.production.updateMany({
@@ -241,7 +248,9 @@ export async function reconcileProductionQueue(
   const jobs = await db.job.findMany({
     where: {
       status: { in: ['queued', 'running'] },
-      type: { in: ['plan', 'produce', 'illustrate', 'export'] },
+      type: {
+        in: ['plan', 'produce', 'illustrate', 'export', 'edit-export'],
+      },
     },
     orderBy: { createdAt: 'asc' },
     take: 100,
@@ -298,8 +307,7 @@ export async function failProductionJob(
           ...p,
           jobId: undefined,
           stage: 'failed',
-          failedAction: job.type as
-            'plan' | 'produce' | 'illustrate' | 'export',
+          failedAction: job.type as NonNullable<Production['failedAction']>,
           failure: normalizedFailure,
           error: normalizedFailure.publicMessage,
         }),

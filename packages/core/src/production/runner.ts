@@ -25,6 +25,28 @@ export type ProductionOperation = (
   p: Production,
   signal: AbortSignal,
 ) => Promise<Production>;
+const DEFAULT_JOB_TIMEOUT_MS = 20 * 60 * 1000;
+const MIN_EXPORT_TIMEOUT_MS = 30 * 60 * 1000;
+const MAX_EXPORT_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+/**
+ * Chrome captures the film at 12fps, which currently takes several seconds
+ * of wall clock per second of video. Give frame capture a budget proportional
+ * to the film length instead of failing long exports at a fixed 20 minutes.
+ */
+export function productionJobTimeoutMs(type: Job['type'], durationMs = 0) {
+  const filmSeconds = Math.max(0, Math.ceil(durationMs / 1000));
+  if (type === 'export')
+    return Math.min(
+      MAX_EXPORT_TIMEOUT_MS,
+      Math.max(MIN_EXPORT_TIMEOUT_MS, filmSeconds * 10_000 + 10 * 60 * 1000),
+    );
+  if (type === 'edit-export')
+    return Math.min(
+      MAX_EXPORT_TIMEOUT_MS,
+      Math.max(DEFAULT_JOB_TIMEOUT_MS, filmSeconds * 2_000 + 10 * 60 * 1000),
+    );
+  return DEFAULT_JOB_TIMEOUT_MS;
+}
 export interface ProductionOperations {
   plan: ProductionOperation;
   script: ProductionOperation;
@@ -52,6 +74,7 @@ export interface ProductionOperations {
   ) => Promise<Production>;
   compose: ProductionOperation;
   render: ProductionOperation;
+  editExport?: ProductionOperation;
   reviseDuration?: (
     p: Production,
     targetMs: number,
@@ -108,14 +131,19 @@ export function createProductionRunner(
     let phase: ProductionPhase =
       run.job.type === 'plan'
         ? 'planning'
-        : run.job.type === 'export'
+        : run.job.type === 'export' || run.job.type === 'edit-export'
           ? 'rendering'
           : p.scenes.length
             ? 'illustrating'
             : 'scripting';
     try {
       await store.start(p, id);
-      const signal = AbortSignal.timeout(20 * 60 * 1000);
+      const signal = AbortSignal.timeout(
+        productionJobTimeoutMs(
+          run.job.type,
+          p.durationMs ?? (p.brief?.durationSec ?? 0) * 1000,
+        ),
+      );
       const ops = await createOperations(p);
       const log = async (
         message: string,
@@ -572,6 +600,12 @@ export function createProductionRunner(
         await log('正在按当前版本逐帧渲染视频', 'rendering', 10);
         p = await ops.render(p, signal);
         await log('视频已导出，可以下载 MP4 和字幕', 'ready', 95);
+      } else if (run.job.type === 'edit-export') {
+        phase = 'rendering';
+        await log('正在按剪辑点处理原片', 'rendering', 10);
+        if (!ops.editExport) throw new Error('剪辑导出服务不可用');
+        p = await ops.editExport(p, signal);
+        await log('剪辑视频与更新后的字幕已导出', 'ready', 95);
       } else throw new Error('未知制作任务');
       await store.complete(p, id);
     } catch (error) {

@@ -1,9 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import type { ProductionFailure } from '@timotv/contracts';
-import {
-  ProductionFailureError,
-  type ProductionRunStore,
-} from '@timotv/core';
+import { ProductionFailureError, type ProductionRunStore } from '@timotv/core';
 import { repository } from './index.js';
 import { productionStore } from './production.js';
 export function productionRunStore(db: PrismaClient): ProductionRunStore {
@@ -22,7 +19,7 @@ export function productionRunStore(db: PrismaClient): ProductionRunStore {
             phase:
               action === 'plan'
                 ? 'planning'
-                : action === 'export'
+                : action === 'export' || action === 'edit-export'
                   ? 'rendering'
                   : 'illustrating',
             retryable: true,
@@ -37,9 +34,7 @@ export function productionRunStore(db: PrismaClient): ProductionRunStore {
             jobId: undefined,
             failure: mode === 'fail' ? normalizedFailure : undefined,
             error:
-              mode === 'fail'
-                ? normalizedFailure?.publicMessage
-                : undefined,
+              mode === 'fail' ? normalizedFailure?.publicMessage : undefined,
             ...(mode === 'fail'
               ? {
                   stage: 'failed',

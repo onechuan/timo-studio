@@ -7,6 +7,7 @@ export * from './events.js';
 
 export * from './production.js';
 export * from './production-failure.js';
+export * from './edit.js';
 export * from './artwork.js';
 
 export * from './settings.js';

@@ -62,15 +62,17 @@ Production 与原剪辑 Timeline 独立，保存在带 revision 和 jobId 锁的
 
 流程为 draft → planning → approval；用户批准后 scripting → narrating → illustrating → composing → ready。导出是独立 rendering 任务，返回 ready 后提供 MP4。失败记录 failedAction，支持按原阶段重试。绘图逐页检查点持久化，重试保留已完成的页，`restart: true` 可放弃已有画面重新绘制；illustrate 独立任务复用已测量音频与字幕，不再次调用 TTS。
 
-网站通过 GET/POST/PUT `/api/projects/:id/production` 读取、建立和编辑内容，POST `/api/projects/:id/production/actions` 发起 plan/approve/produce/export。`/api/production/capabilities` 返回不含密钥的配置状态。产物路由只读取该项目当前登记的文件，验证真实路径位于存储根目录内，并支持音视频 Range 请求。
+网站通过 GET/POST/PUT `/api/projects/:id/production` 读取、建立和编辑内容，POST `/api/projects/:id/production/actions` 发起 plan/approve/produce/export/edit-export。`/api/production/capabilities` 返回不含密钥的配置状态。产物路由只读取该项目当前登记的文件，验证真实路径位于存储根目录内，并支持音视频 Range 请求。
 
 播放器模板通过 `@timotv/renderer/preview` 纯子入口复用，API 不加载编码器或启动浏览器。读取当前预览 HTML 时，在产物归属、真实路径与文件存在检查之后，以当前制作稿生成最新播放器界面，使已有项目无需重做即可获得 UI 更新。音频文件及 Range 路由保持不变。导出模板显式关闭控件和音频元素，以 renderAt(t) 驱动画面，避免把播放按钮或控制条录入视频。
 
 修改主题会使分镜与后续产物过期；修改口播会清除旧时间与产物，并让语义变化的页面画面失效；只改音色可以复用画面结构。配音按文本、实际音色、服务商与合成模型缓存，未变化的句子不重复合成。导出固定读取已有制作版本，临时编码成功后原子替换 MP4。
 
+成片剪辑保存在 `Production.edit`。保存时记录源片 `videoKey`、时长、12fps 与字幕快照，服务端把客户端提交的 `id/sourceInMs/sourceOutMs/volume/muted` 按帧对齐，计算输出顺序与总时长，并将每条源字幕与每个片段求交后平移到输出时间线；客户端不提交派生字幕。`edit-export` 与 `export` 一样不增加 revision，因此不能靠 revision 判断新鲜度：`isEditCurrent` 比较源片、时长和字幕快照，读取时统一隐藏过期剪辑。主题、分镜、口播或场景更新以及 plan/produce/illustrate 领取会清空剪辑；导出失败重试保留剪辑。渲染器用单次 FFmpeg `filter_complex` 按帧 `trim` 视频、按段 `atrim` + `volume` + `apad` + 定长 `atrim` 处理音频，再统一 `concat` 和一次重编码，避免逐段 MP4 流拷贝在接缝处产生音画漂移；输出 `r{revision}/edit.mp4` 与 `edit.srt`，字幕不烧录，由预览覆盖层和 SRT 下载呈现。
+
 制作任务使用独立 `timotv-production` 队列。Worker 启动和定时扫描有持久化锁的 queued 任务，补交丢失的队列记录，并处理终止失败；运行中的任务由 BullMQ 锁与文档所有权约束，避免旧任务覆盖新编辑。现有诊断队列保持原行为。
 
-本轮画面为受控 SVG 关系图动画，配音为真实句级时间；尚未接入自由生成页面代码、独立视觉模型验收、ASR 或真实视频素材剪辑。
+本轮画面为受控 SVG 关系图动画，配音为真实句级时间；已支持对生成成片裁剪、重排、删除、字幕重算与逐段音量，尚未接入自由生成页面代码、独立视觉模型验收、ASR 或外部视频素材剪辑。
 
 ## 职责分离
 
