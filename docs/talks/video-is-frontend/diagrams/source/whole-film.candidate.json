@@ -1,0 +1,318 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "第一层 Workflow：从想法到可预览成片",
+    "locale": "zh-CN",
+    "output": ".archify/workflow-two-layer-video-20261112-000051/whole-film-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:onechuan/timo-studio.git",
+      "revision": "6145f7e3482628543bd6f2d68fe3b618d366213a",
+      "link_mode": "local-only"
+    },
+    "views": [
+      {
+        "id": "happyPath",
+        "label": "主流程",
+        "focus": ["request", "restore", "research", "storyboard", "storyboardGate", "script", "dispatch", "parallelPrep", "firstPage", "lookGate", "parallelPages", "pageChecks", "wholeReview", "ready"],
+        "note": "Director Harness 控制阶段推进；Agent 只完成当前阶段任务。"
+      },
+      {
+        "id": "humanGates",
+        "label": "人工闸门",
+        "focus": ["storyboardGate", "lookGate"],
+        "note": "先确认内容结构；设计型影片再用第一页确认视觉方向。"
+      },
+      {
+        "id": "parallelWork",
+        "label": "并行部分",
+        "focus": ["dispatch", "parallelPrep", "parallelPages", "pageChecks"],
+        "note": "配音、组件与图片可并行；页面随后按 lane 并行制作和自检。"
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "human", "label": "用户 / Studio" },
+    { "id": "agents", "label": "Agent 会话" },
+    { "id": "tools", "label": "工具与项目状态" },
+    { "id": "harness", "label": "Director Harness" }
+  ],
+  "phases": [
+    { "id": "plan", "label": "理解与规划", "fromCol": 0, "toCol": 2 },
+    { "id": "prepare", "label": "生产准备", "fromCol": 3, "toCol": 3, "variant": "dashed" },
+    { "id": "produce", "label": "并行制作与验收", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "groups": [
+    { "id": "planningAgent", "label": "Planner 连续会话", "lane": "agents", "fromCol": 1, "toCol": 2, "variant": "emphasis" },
+    { "id": "productionAgents", "label": "页面生产", "lane": "agents", "fromCol": 4, "toCol": 5, "variant": "dashed" },
+    { "id": "qualityTools", "label": "确定性质量门", "lane": "tools", "fromCol": 4, "toCol": 5, "variant": "security" }
+  ],
+  "mainPath": ["request", "restore", "research", "storyboard", "storyboardGate", "script", "dispatch", "parallelPrep", "firstPage", "lookGate", "parallelPages", "pageChecks", "wholeReview", "ready"],
+  "semanticChecks": {
+    "allowedRoots": ["request"],
+    "allowedTerminals": ["ready", "workspace"],
+    "requiredPaths": [
+      { "from": "request", "to": "storyboardGate" },
+      { "from": "storyboardGate", "to": "ready" },
+      { "from": "parallelPages", "to": "wholeReview" }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "request",
+      "lane": "human",
+      "col": 0,
+      "type": "external",
+      "label": "想法或资料",
+      "sublabel": "主题 · 素材 · 时长 · 风格",
+      "icon": "start",
+      "sources": [
+        { "path": "README.zh-CN.md", "line": 46, "end_line": 52, "label": "产品制作流程" }
+      ]
+    },
+    {
+      "id": "restore",
+      "lane": "harness",
+      "col": 0,
+      "type": "backend",
+      "label": "加载项目状态",
+      "sublabel": "stage · page · session",
+      "tag": "可断点续跑",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 362, "end_line": 371, "label": "读取 state.json" },
+        { "path": "packages/agent/src/director.ts", "line": 2059, "end_line": 2078, "label": "按当前阶段续跑" }
+      ]
+    },
+    {
+      "id": "workspace",
+      "lane": "tools",
+      "col": 0,
+      "type": "database",
+      "label": "项目工作区",
+      "sublabel": "state.json · 会话 · Git",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 476, "end_line": 484, "label": "状态与提交" }
+      ]
+    },
+    {
+      "id": "research",
+      "lane": "tools",
+      "col": 1,
+      "type": "cloud",
+      "label": "可选调研",
+      "sublabel": "资料 / 网页 → research.md",
+      "tag": "失败不阻断",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 580, "end_line": 610, "label": "调研与降级" }
+      ]
+    },
+    {
+      "id": "storyboard",
+      "lane": "agents",
+      "col": 1,
+      "type": "backend",
+      "label": "Planner 写分镜",
+      "sublabel": "拍点 · lint · 自动修复",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 614, "end_line": 664, "label": "分镜阶段" },
+        { "path": "packages/agent/src/prompts.ts", "line": 180, "end_line": 202, "label": "分镜提示与修复" }
+      ]
+    },
+    {
+      "id": "storyboardFeedback",
+      "lane": "human",
+      "col": 1,
+      "type": "frontend",
+      "label": "提出分镜修改",
+      "sublabel": "顺序 · 重点 · 表达",
+      "icon": "active",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 662, "end_line": 674, "label": "审批反馈进入口播前" }
+      ]
+    },
+    {
+      "id": "storyboardGate",
+      "lane": "human",
+      "col": 2,
+      "type": "security",
+      "label": "用户确认分镜",
+      "sublabel": "批准或反馈重规划",
+      "tag": "强制人工闸门",
+      "icon": "decision",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 650, "end_line": 665, "label": "进入 approval" },
+        { "path": "packages/agent/src/events.ts", "line": 50, "end_line": 52, "label": "审批事件" }
+      ]
+    },
+    {
+      "id": "script",
+      "lane": "agents",
+      "col": 2,
+      "type": "backend",
+      "label": "Planner 续写口播",
+      "sublabel": "复用会话 · 逐页校验",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 668, "end_line": 699, "label": "口播阶段" }
+      ]
+    },
+    {
+      "id": "dispatch",
+      "lane": "harness",
+      "col": 3,
+      "type": "messagebus",
+      "label": "Director 并行调度",
+      "sublabel": "配音 · 组件 · 图片并行",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 2068, "end_line": 2075, "label": "并行阶段调度" }
+      ]
+    },
+    {
+      "id": "parallelPrep",
+      "lane": "tools",
+      "col": 3,
+      "type": "external",
+      "label": "声音与公共资产",
+      "sublabel": "时间戳 · 组件 · 图片",
+      "sources": [
+        { "path": "packages/voice/src/narrate.ts", "line": 192, "end_line": 260, "label": "配音与时间戳" },
+        { "path": "packages/agent/src/director.ts", "line": 2068, "end_line": 2072, "label": "并行准备" }
+      ]
+    },
+    {
+      "id": "firstPage",
+      "lane": "agents",
+      "col": 4,
+      "type": "backend",
+      "label": "先制作第一页",
+      "sublabel": "自定义风格先验首屏",
+      "tag": "条件步骤",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1235, "end_line": 1255, "label": "首屏制作条件" }
+      ]
+    },
+    {
+      "id": "lookFeedback",
+      "lane": "human",
+      "col": 4,
+      "type": "frontend",
+      "label": "提出首屏修改",
+      "sublabel": "布局 · 风格 · 信息层级",
+      "icon": "active",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1250, "end_line": 1269, "label": "首屏修改循环" }
+      ]
+    },
+    {
+      "id": "lookGate",
+      "lane": "human",
+      "col": 5,
+      "type": "security",
+      "label": "第一页确认",
+      "sublabel": "通过 / 提问 / 修改",
+      "tag": "条件人工闸门",
+      "icon": "decision",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1250, "end_line": 1269, "label": "确认与修改循环" },
+        { "path": "packages/agent/src/events.ts", "line": 56, "end_line": 61, "label": "首屏等待事件" }
+      ]
+    },
+    {
+      "id": "parallelPages",
+      "lane": "agents",
+      "col": 5,
+      "type": "backend",
+      "label": "Page Agent 并行制作",
+      "sublabel": "分 lane · ≤10 路 · 失败隔离",
+      "tag": "fan-out",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1402, "end_line": 1495, "label": "页面并发调度" }
+      ]
+    },
+    {
+      "id": "pageChecks",
+      "lane": "tools",
+      "col": 5,
+      "type": "security",
+      "label": "逐页检查闭环",
+      "sublabel": "lint · 截图 · Reviewer · 返工",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1635, "end_line": 1685, "label": "逐页验收循环" },
+        { "path": "packages/agent/src/project.ts", "line": 246, "end_line": 257, "label": "确定性检查" }
+      ]
+    },
+    {
+      "id": "wholeReview",
+      "lane": "harness",
+      "col": 5,
+      "yOffset": -58,
+      "type": "backend",
+      "label": "全片复核",
+      "sublabel": "跨页一致性 · 有限轮修复",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1722, "end_line": 1765, "label": "全片检查" }
+      ]
+    },
+    {
+      "id": "ready",
+      "lane": "harness",
+      "col": 5,
+      "yOffset": 58,
+      "type": "frontend",
+      "label": "Ready：实时预览",
+      "sublabel": "预览；MP4 按需导出",
+      "icon": "success",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1768, "end_line": 1777, "label": "Ready 与导出边界" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "request-load", "from": "request", "to": "restore", "variant": "emphasis", "role": "main" },
+    { "id": "load-state", "from": "restore", "to": "workspace", "variant": "dashed" },
+    { "id": "start-research", "from": "restore", "to": "research", "label": "配置了调研", "role": "main" },
+    { "id": "skip-research", "from": "restore", "to": "storyboard", "label": "跳过调研", "role": "branch", "variant": "dashed" },
+    { "id": "research-plan", "from": "research", "to": "storyboard", "label": "research.md；失败也继续", "role": "main" },
+    { "id": "plan-approval", "from": "storyboard", "to": "storyboardGate", "variant": "security", "role": "main" },
+    { "id": "request-storyboard-change", "from": "storyboardGate", "to": "storyboardFeedback", "label": "不批准", "variant": "security", "role": "return" },
+    { "id": "apply-storyboard-change", "from": "storyboardFeedback", "to": "storyboard", "label": "反馈", "variant": "security", "role": "return" },
+    { "id": "approve-script", "from": "storyboardGate", "to": "script", "label": "批准", "variant": "emphasis", "role": "main" },
+    { "id": "script-dispatch", "from": "script", "to": "dispatch", "variant": "emphasis", "role": "main" },
+    { "id": "parallel-prep", "from": "dispatch", "to": "parallelPrep", "label": "fork / join", "variant": "dashed", "role": "async" },
+    { "id": "prep-first", "from": "parallelPrep", "to": "firstPage", "label": "设计型影片", "role": "main" },
+    { "id": "skip-look-gate", "from": "parallelPrep", "to": "parallelPages", "label": "固定风格或单页", "role": "branch", "variant": "dashed" },
+    { "id": "first-look", "from": "firstPage", "to": "lookGate", "variant": "security", "role": "main" },
+    { "id": "request-first-change", "from": "lookGate", "to": "lookFeedback", "label": "不通过", "variant": "security", "role": "return" },
+    { "id": "apply-first-change", "from": "lookFeedback", "to": "firstPage", "label": "修改要求", "variant": "security", "role": "return" },
+    { "id": "approve-pages", "from": "lookGate", "to": "parallelPages", "label": "继续", "variant": "emphasis", "role": "main" },
+    { "id": "pages-check", "from": "parallelPages", "to": "pageChecks", "label": "每页各自验收", "variant": "security", "role": "main" },
+    { "id": "checks-review", "from": "pageChecks", "to": "wholeReview", "label": "全部 settled", "variant": "emphasis", "role": "main" },
+    { "id": "review-ready", "from": "wholeReview", "to": "ready", "variant": "emphasis", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "控制权",
+      "items": [
+        "阶段跳转由 Director 的普通代码控制，不交给 Planner 自由决定。",
+        "每个阶段完成后写入 state.json；重启从未完成的阶段继续。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "并行边界",
+      "items": [
+        "口播完成后，配音、影片组件和图片可以并行准备。",
+        "页面按 lane 并行，但所有页面 settled 后才进入全片复核。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "条件路径",
+      "items": [
+        "调研失败不会阻断制作。",
+        "第一页确认只用于需要先验证自定义视觉方向的影片。"
+      ]
+    }
+  ]
+}
