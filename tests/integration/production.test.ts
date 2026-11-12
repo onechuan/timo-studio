@@ -281,7 +281,13 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         audio: measured.artifacts.audio,
         subtitles: 'old.srt',
       });
-      const checkpoint = { ...fresh.production, scenes: measured.scenes };
+      const checkpoint = {
+        ...fresh.production,
+        scenes: measured.scenes,
+        // A page-scoped review from an earlier failure must not narrow the
+        // resumed pipeline to that page.
+        reviewTask: { sceneId: measured.scenes[0].id, mode: 'review' as const },
+      };
       await productionRunStore(db).checkpoint(checkpoint, fresh.job.id, 80);
       await productionRunStore(db).fail(
         checkpoint,
@@ -296,6 +302,7 @@ describe.skipIf(process.env.RUN_INTEGRATION !== '1')(
         'illustrate',
       );
       expect(retry.production.scenes).toEqual(measured.scenes);
+      expect(retry.production.reviewTask).toBeUndefined();
       expect(retry.production.durationMs).toBe(1000);
       await productionRunStore(db).fail(
         retry.production,
