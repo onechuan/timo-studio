@@ -202,26 +202,46 @@ function ProductionFailureCard({
     (doc.durationMs ?? doc.durationState?.measuredMs ?? 0) / 1000,
   );
   const sceneId = failure.context?.sceneId;
+  const failedScene = sceneId
+    ? doc.scenes.find((scene) => scene.id === sceneId)
+    : undefined;
+  // A page that was never drawn cannot be retried as a review, even when an
+  // older failure was labelled "reviewing" because drawing happened after the
+  // previous page's review. Resume the pipeline and keep finished pages.
+  const resumeUnillustrated =
+    !!sceneId &&
+    !failedScene?.artwork &&
+    (failure.phase === 'illustrating' || failure.phase === 'reviewing');
   const action: RecoveryAction = durationDecision
     ? 'accept-duration'
-    : failure.phase === 'reviewing' && sceneId
-      ? 'review'
-      : failure.phase === 'rendering'
-        ? 'export'
-        : failure.phase === 'illustrating'
-          ? 'illustrate'
-          : failure.phase === 'planning'
-            ? 'plan'
-            : doc.scenes.length
-              ? 'produce'
-              : 'approve';
+    : resumeUnillustrated
+      ? doc.failedAction === 'illustrate'
+        ? 'illustrate'
+        : 'produce'
+      : failure.phase === 'reviewing' && sceneId
+        ? 'review'
+        : failure.phase === 'rendering'
+          ? 'export'
+          : failure.phase === 'illustrating'
+            ? 'illustrate'
+            : failure.phase === 'planning'
+              ? 'plan'
+              : doc.scenes.length
+                ? 'produce'
+                : 'approve';
+  const actionSceneId =
+    action === 'review' || (action === 'illustrate' && !resumeUnillustrated)
+      ? sceneId
+      : undefined;
   const label = durationDecision
     ? `按 ${measuredSeconds} 秒继续制作`
-    : failure.phase === 'reviewing' && sceneId
-      ? '重试当前页审片'
-      : failure.retryable
-        ? '重试失败步骤'
-        : '修正内容后重新开始';
+    : resumeUnillustrated
+      ? '继续绘制剩余页面'
+      : failure.phase === 'reviewing' && sceneId
+        ? '重试当前页审片'
+        : failure.retryable
+          ? '重试失败步骤'
+          : '修正内容后重新开始';
   return (
     <section className="production-failure-card" role="alert">
       <strong>
@@ -233,7 +253,7 @@ function ProductionFailureCard({
       <button
         className="secondary"
         disabled={locked}
-        onClick={() => onAction(action, sceneId)}
+        onClick={() => onAction(action, actionSceneId)}
       >
         <RotateCcw size={14} />
         {label}

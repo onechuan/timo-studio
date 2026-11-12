@@ -289,6 +289,61 @@ describe('production runner', () => {
     });
   });
 
+  it('labels a drawing failure after a reviewed page as illustrating', async () => {
+    const production = {
+      projectId: 'project',
+      revision: 1,
+      jobId: 'job',
+      stage: 'illustrating',
+      artifacts: { audio: 'voice.wav' },
+      events: [],
+      scenes: [
+        {
+          id: 'p01',
+          artwork: { version: 1, intent: 'test', elements: [] },
+        },
+        { id: 'p02' },
+      ],
+    } as unknown as Production;
+    let persisted:
+      { production: Production; failure: ProductionFailure } | undefined;
+    const unchanged = async (p: Production) => p;
+    const run = createProductionRunner(
+      {
+        load: async () => ({
+          job: { id: 'job', type: 'illustrate', status: 'queued' } as Job,
+          production,
+        }),
+        start: async () => {},
+        checkpoint: async () => {},
+        complete: async () => {},
+        fail: async (p, _id, _action, failure) => {
+          persisted = { production: p, failure };
+        },
+      },
+      () => ({
+        plan: unchanged,
+        script: unchanged,
+        narrate: unchanged,
+        illustrateScene: async (p, index) => {
+          if (p.scenes[index].id === 'p02') throw new Error('MODEL_TIMEOUT');
+          return p;
+        },
+        reviewScene: unchanged,
+        compose: unchanged,
+        render: unchanged,
+      }),
+      () => '导演模型请求超时，请稍后重试，或缩短目标时长后重新规划',
+    );
+
+    await expect(run('job')).rejects.toThrow('导演模型请求超时');
+    expect(persisted?.failure).toMatchObject({
+      phase: 'illustrating',
+      context: { sceneId: 'p02' },
+      publicMessage: '导演模型请求超时，请稍后重试，或缩短目标时长后重新规划',
+    });
+  });
+
   for (const type of ['plan', 'produce', 'illustrate', 'export'] as const)
     it(`sequences ${type} and releases`, async () => {
       const calls: string[] = [];
