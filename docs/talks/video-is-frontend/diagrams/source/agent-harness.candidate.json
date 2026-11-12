@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "TimoTV Harness 与多 Agent 协作架构",
+    "locale": "zh-CN",
+    "output": ".archify/architecture-timotv-agent-harness-20261111-233907/timotv-agent-harness.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:onechuan/timo-studio.git",
+      "revision": "6145f7e3482628543bd6f2d68fe3b618d366213a",
+      "link_mode": "local-only"
+    },
+    "views": [
+      {
+        "id": "control",
+        "label": "控制面",
+        "focus": ["studio", "director", "runtime", "workspace"],
+        "note": "Director 持有状态、预算、会话引用与人工审批点。"
+      },
+      {
+        "id": "agents",
+        "label": "Agent 分工",
+        "focus": ["planner", "pageAgents", "reviewers"],
+        "note": "规划、绘制、审片是不同会话，职责和工具权限各不相同。"
+      },
+      {
+        "id": "feedback",
+        "label": "质量闭环",
+        "focus": ["pageAgents", "engine", "reviewers", "director"],
+        "note": "程序检查与视觉审片共同产生可执行问题，再回到原页面局部修改。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "studio",
+      "type": "frontend",
+      "label": "用户与 Studio",
+      "sublabel": "请求 · 分镜审批 · 首屏确认 · 局部修改",
+      "icon": "person",
+      "pos": [40, 260],
+      "size": [170, 86],
+      "sources": [
+        { "path": "README.zh-CN.md", "line": 39, "end_line": 52, "label": "用户流程" },
+        { "path": "packages/agent/src/events.ts", "line": 46, "end_line": 65, "label": "审批与页面事件" }
+      ]
+    },
+    {
+      "id": "director",
+      "type": "backend",
+      "label": "Director Harness",
+      "sublabel": "状态机 · 调度 · 预算 · 路由 · 失败恢复",
+      "tag": "唯一控制器",
+      "pos": [300, 240],
+      "size": [200, 118],
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 362, "end_line": 371, "label": "状态恢复" },
+        { "path": "packages/agent/src/director.ts", "line": 476, "end_line": 531, "label": "持久化与会话创建" },
+        { "path": "packages/agent/src/director.ts", "line": 2059, "end_line": 2078, "label": "阶段状态机" }
+      ]
+    },
+    {
+      "id": "runtime",
+      "type": "cloud",
+      "label": "AgentRuntime 适配层",
+      "sublabel": "open / resume / send · 模型可替换",
+      "pos": [320, 55],
+      "size": [170, 78],
+      "sources": [
+        { "path": "packages/agent/src/runtime/types.ts", "line": 50, "end_line": 98, "label": "统一会话接口" }
+      ]
+    },
+    {
+      "id": "planner",
+      "type": "backend",
+      "label": "Planner / Director Agent",
+      "sublabel": "调研 → 分镜 → 口播；同一规划会话续写",
+      "pos": [620, 55],
+      "size": [190, 86],
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 614, "end_line": 698, "label": "分镜与口播阶段" },
+        { "path": "packages/agent/src/prompts.ts", "line": 60, "end_line": 66, "label": "系统提示词组装" },
+        { "path": "packages/agent/src/prompts.ts", "line": 180, "end_line": 202, "label": "分镜任务与修复" }
+      ]
+    },
+    {
+      "id": "voice",
+      "type": "external",
+      "label": "Voice / TTS 工具",
+      "sublabel": "按页合成 · 静音切分 · 字符级时间戳",
+      "pos": [40, 500],
+      "size": [180, 86],
+      "sources": [
+        { "path": "packages/voice/src/narrate.ts", "line": 171, "end_line": 190, "label": "字符时间" },
+        { "path": "packages/voice/src/narrate.ts", "line": 192, "end_line": 260, "label": "配音与缓存" }
+      ]
+    },
+    {
+      "id": "pageAgents",
+      "type": "backend",
+      "label": "Page Agent Lanes",
+      "sublabel": "每页最小上下文 · 最多 10 路并行 · 局部 edit",
+      "tag": "并行执行面",
+      "pos": [620, 255],
+      "size": [205, 102],
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1402, "end_line": 1475, "label": "会话分 lane" },
+        { "path": "packages/agent/src/director.ts", "line": 1477, "end_line": 1495, "label": "并发与缓存预热" },
+        { "path": "packages/agent/src/runtime/types.ts", "line": 120, "end_line": 131, "label": "禁止整页重写" }
+      ]
+    },
+    {
+      "id": "reviewers",
+      "type": "security",
+      "label": "Reviewer Agent",
+      "sublabel": "无文件工具 · 看截图 · 返回结构化 verdict",
+      "pos": [930, 255],
+      "size": [185, 92],
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1635, "end_line": 1687, "label": "独立审片与返工" },
+        { "path": "packages/agent/src/runtime/types.ts", "line": 42, "end_line": 60, "label": "结构化回答工具" }
+      ]
+    },
+    {
+      "id": "engine",
+      "type": "backend",
+      "label": "确定性视频引擎",
+      "sublabel": "timeline · lint · contact sheet · render",
+      "tag": "硬质量门",
+      "pos": [620, 485],
+      "size": [205, 94],
+      "sources": [
+        { "path": "packages/agent/src/project.ts", "line": 233, "end_line": 265, "label": "时间线与画面检查" },
+        { "path": "packages/agent/src/project.ts", "line": 268, "end_line": 272, "label": "渲染入口" }
+      ]
+    },
+    {
+      "id": "workspace",
+      "type": "database",
+      "label": "项目工作区",
+      "sublabel": "storyboard · script · voice · pages · state · git 历史",
+      "tag": "Agent 间的共享事实",
+      "pos": [300, 485],
+      "size": [205, 98],
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 362, "end_line": 371, "label": "state.json" },
+        { "path": "packages/agent/src/director.ts", "line": 476, "end_line": 484, "label": "状态与提交串行化" },
+        { "path": "packages/agent/src/project.ts", "line": 152, "end_line": 171, "label": "项目产物读写" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "短上下文 Agent 会话",
+      "wraps": ["planner", "pageAgents", "reviewers"],
+      "pad": 18
+    },
+    {
+      "kind": "region",
+      "label": "可恢复的本地制作 Harness",
+      "wraps": ["director", "runtime", "planner", "pageAgents", "reviewers", "engine", "workspace"],
+      "pad": 30
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-control",
+      "from": "studio",
+      "to": "director",
+      "label": "请求 / 审批 / 修改",
+      "variant": "emphasis"
+    },
+    {
+      "id": "session-runtime",
+      "from": "director",
+      "to": "runtime",
+      "label": "open / resume named session",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "plan-task",
+      "from": "director",
+      "to": "planner",
+      "label": "材料 + 阶段提示词"
+    },
+    {
+      "id": "voice-task",
+      "from": "director",
+      "to": "voice",
+      "label": "口播 + 音色"
+    },
+    {
+      "id": "page-fanout",
+      "from": "director",
+      "to": "pageAgents",
+      "label": "按页分发真实时间线",
+      "variant": "emphasis"
+    },
+    {
+      "id": "review-task",
+      "from": "director",
+      "to": "reviewers",
+      "label": "分镜 + lint + 截图"
+    },
+    {
+      "id": "verdict-return",
+      "from": "reviewers",
+      "to": "director",
+      "label": "verdict / problems",
+      "variant": "security"
+    },
+    {
+      "id": "engine-call",
+      "from": "director",
+      "to": "engine",
+      "label": "调用检查；返回 issues / sheet / crash"
+    },
+    {
+      "id": "planner-artifacts",
+      "from": "planner",
+      "to": "workspace",
+      "label": "storyboard + script",
+      "variant": "dashed"
+    },
+    {
+      "id": "voice-artifacts",
+      "from": "voice",
+      "to": "workspace",
+      "label": "audio + timing",
+      "variant": "dashed"
+    },
+    {
+      "id": "page-artifacts",
+      "from": "pageAgents",
+      "to": "workspace",
+      "label": "pages/*.js edits",
+      "variant": "dashed"
+    },
+    {
+      "id": "state-write",
+      "from": "director",
+      "to": "workspace",
+      "label": "state + serialized commits",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "核心结论",
+      "items": [
+        "多 Agent 不互相自由聊天；Director 是唯一编排者。",
+        "Agent 用项目产物和结构化 verdict 交接，不共享一个无限增长的对话。",
+        "并行发生在页面制作，阶段推进、人工闸门和提交仍由 Harness 控制。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "上下文策略",
+      "items": [
+        "稳定规则放 system prompt，当前页面和时间放 task prompt。",
+        "Planner 保留分镜到口播的连续上下文；每个页面只看自己的最小上下文。",
+        "Reviewer 不拿文件工具，避免一边审一边擅自改。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "可靠性来源",
+      "items": [
+        "提示词定义软标准，工具提供行动能力，普通程序执行硬检查。",
+        "截图审片补足 lint 不懂语义的问题；失败只回到对应页面局部 edit。",
+        "state.json、会话引用和 git 提交让中断与回退可恢复。"
+      ]
+    }
+  ]
+}

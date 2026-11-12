@@ -1,0 +1,244 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "第二层 Workflow：单页生成、检查与返工闭环",
+    "locale": "zh-CN",
+    "output": ".archify/workflow-two-layer-video-20261112-000051/single-page-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:onechuan/timo-studio.git",
+      "revision": "6145f7e3482628543bd6f2d68fe3b618d366213a",
+      "link_mode": "local-only"
+    },
+    "views": [
+      {
+        "id": "happyPath",
+        "label": "通过路径",
+        "focus": ["start", "session", "draft", "commitDraft", "check", "reviewer", "gate", "settle", "thumbnail"],
+        "note": "初稿通过程序检查和独立 Reviewer 后才成为 settled 页面。"
+      },
+      {
+        "id": "repairLoop",
+        "label": "返工循环",
+        "focus": ["check", "reviewer", "gate", "localFix"],
+        "note": "运行错误或视觉问题都回到原 Page Agent，局部 edit 后重新检查。"
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "harness", "label": "Director Harness" },
+    { "id": "pageAgent", "label": "Page Agent" },
+    { "id": "engine", "label": "确定性引擎" },
+    { "id": "reviewerLane", "label": "Reviewer Agent" },
+    { "id": "quality", "label": "质量裁决", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "draftPhase", "label": "创建初稿", "fromCol": 0, "toCol": 1 },
+    { "id": "inspectPhase", "label": "机器检查 + 视觉审片", "fromCol": 2, "toCol": 3, "variant": "security" },
+    { "id": "repairPhase", "label": "局部返工", "fromCol": 4, "toCol": 4, "variant": "dashed" },
+    { "id": "settlePhase", "label": "收敛", "fromCol": 5, "toCol": 5, "variant": "emphasis" }
+  ],
+  "groups": [
+    { "id": "agentWork", "label": "同一页面会话", "lane": "pageAgent", "fromCol": 0, "toCol": 4, "variant": "emphasis" },
+    { "id": "hardChecks", "label": "硬检查", "lane": "engine", "fromCol": 2, "toCol": 5, "variant": "security" }
+  ],
+  "mainPath": ["start", "session", "draft", "commitDraft", "check", "reviewer", "gate", "settle", "thumbnail"],
+  "semanticChecks": {
+    "allowedRoots": ["start"],
+    "allowedTerminals": ["thumbnail"],
+    "requiredPaths": [
+      { "from": "draft", "to": "gate" },
+      { "from": "localFix", "to": "check" },
+      { "from": "gate", "to": "thumbnail" }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "harness",
+      "col": 0,
+      "type": "messagebus",
+      "label": "选择待制作页面",
+      "sublabel": "读取分镜、口播、真实时间和历史状态",
+      "icon": "start",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1594, "end_line": 1600, "label": "页面状态初始化" }
+      ]
+    },
+    {
+      "id": "session",
+      "lane": "pageAgent",
+      "col": 0,
+      "type": "backend",
+      "label": "打开或恢复 Page Session",
+      "sublabel": "独立会话或 lane；继承最小页面上下文",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1601, "end_line": 1610, "label": "页面会话" }
+      ]
+    },
+    {
+      "id": "draft",
+      "lane": "pageAgent",
+      "col": 1,
+      "type": "backend",
+      "label": "生成初稿或执行修改",
+      "sublabel": "写新页；已有页面只允许局部 edit",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1612, "end_line": 1630, "label": "绘制与修订" },
+        { "path": "packages/agent/src/runtime/types.ts", "line": 120, "end_line": 131, "label": "禁止整页重写" }
+      ]
+    },
+    {
+      "id": "commitDraft",
+      "lane": "harness",
+      "col": 1,
+      "type": "database",
+      "label": "保存初稿版本",
+      "sublabel": "记录 session ref 并串行 Git commit",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1631, "end_line": 1634, "label": "保存初稿" },
+        { "path": "packages/agent/src/director.ts", "line": 476, "end_line": 484, "label": "提交串行化" }
+      ]
+    },
+    {
+      "id": "check",
+      "lane": "engine",
+      "col": 2,
+      "type": "security",
+      "label": "运行页面检查",
+      "sublabel": "lint · 确定性比较 · 关键时刻拼图",
+      "tag": "每轮强制",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1635, "end_line": 1657, "label": "检查循环" },
+        { "path": "packages/agent/src/project.ts", "line": 246, "end_line": 257, "label": "check.mjs" }
+      ]
+    },
+    {
+      "id": "runtimeFix",
+      "lane": "pageAgent",
+      "col": 2,
+      "type": "backend",
+      "label": "优先修运行错误",
+      "sublabel": "页面无法渲染时先根据调用栈修复",
+      "tag": "crash 分支",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1658, "end_line": 1666, "label": "crash 处理" }
+      ]
+    },
+    {
+      "id": "recheckQueue",
+      "lane": "harness",
+      "col": 3,
+      "type": "messagebus",
+      "label": "重新入队检查",
+      "sublabel": "保存修复后再次执行 check",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1658, "end_line": 1668, "label": "修复后回到检查循环" }
+      ]
+    },
+    {
+      "id": "reviewer",
+      "lane": "reviewerLane",
+      "col": 3,
+      "type": "security",
+      "label": "Reviewer 看实际画面",
+      "sublabel": "读取分镜、时间、lint 和 contact sheet",
+      "tag": "无文件修改工具",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1668, "end_line": 1673, "label": "独立 Reviewer" },
+        { "path": "packages/agent/src/runtime/types.ts", "line": 42, "end_line": 60, "label": "结构化回答" }
+      ]
+    },
+    {
+      "id": "gate",
+      "lane": "quality",
+      "col": 3,
+      "type": "security",
+      "label": "是否通过",
+      "sublabel": "lint 无 error 且 Reviewer pass",
+      "icon": "decision",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1674, "end_line": 1676, "label": "通过条件" }
+      ]
+    },
+    {
+      "id": "localFix",
+      "lane": "pageAgent",
+      "col": 4,
+      "type": "backend",
+      "label": "局部 edit",
+      "sublabel": "带着错误清单和截图修尺寸、位置或时刻",
+      "tag": "有限轮重试",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1677, "end_line": 1685, "label": "返工与停止条件" },
+        { "path": "packages/agent/src/prompts.ts", "line": 414, "end_line": 421, "label": "局部修复提示" }
+      ]
+    },
+    {
+      "id": "settle",
+      "lane": "harness",
+      "col": 5,
+      "type": "backend",
+      "label": "页面收敛",
+      "sublabel": "ok、flagged 或 failed；未落地修改会被标记",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1689, "end_line": 1707, "label": "最终状态裁决" }
+      ]
+    },
+    {
+      "id": "thumbnail",
+      "lane": "engine",
+      "col": 5,
+      "type": "frontend",
+      "label": "生成缩略图并更新 Studio",
+      "sublabel": "保存 settled frame 和页面问题状态",
+      "icon": "success",
+      "sources": [
+        { "path": "packages/agent/src/director.ts", "line": 1708, "end_line": 1712, "label": "缩略图与页面状态" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "start-session", "from": "start", "to": "session", "variant": "emphasis", "role": "main" },
+    { "id": "session-draft", "from": "session", "to": "draft", "variant": "emphasis", "role": "main" },
+    { "id": "draft-commit", "from": "draft", "to": "commitDraft", "label": "初稿完成", "role": "main" },
+    { "id": "commit-check", "from": "commitDraft", "to": "check", "variant": "security", "role": "main" },
+    { "id": "check-review", "from": "check", "to": "reviewer", "label": "可渲染：issues + sheet", "variant": "security", "role": "main" },
+    { "id": "check-crash", "from": "check", "to": "runtimeFix", "label": "crash / API error", "variant": "security", "role": "error" },
+    { "id": "runtime-requeue", "from": "runtimeFix", "to": "recheckQueue", "label": "修复完成", "variant": "dashed", "role": "return" },
+    { "id": "runtime-recheck", "from": "recheckQueue", "to": "check", "label": "重检", "variant": "dashed", "role": "return" },
+    { "id": "review-gate", "from": "reviewer", "to": "gate", "label": "verdict", "variant": "security", "role": "main" },
+    { "id": "gate-pass", "from": "gate", "to": "settle", "label": "pass", "variant": "emphasis", "role": "main" },
+    { "id": "gate-fix", "from": "gate", "to": "localFix", "label": "errors / problems", "variant": "security", "role": "branch" },
+    { "id": "fix-recheck", "from": "localFix", "to": "check", "label": "edit 后重新截图", "variant": "dashed", "role": "return" },
+    { "id": "fix-flag", "from": "localFix", "to": "settle", "label": "flag 或达到轮数上限", "variant": "dashed", "role": "branch" },
+    { "id": "settle-thumb", "from": "settle", "to": "thumbnail", "variant": "emphasis", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "双重验收",
+      "items": [
+        "Engine 检查可测量错误：越界、重叠、运行异常和非确定性。",
+        "Reviewer 判断语义与视觉：是否画对、是否画完、是否真正解释内容。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "局部返工",
+      "items": [
+        "问题回到绘制该页的原会话，连同时间点和截图一起发送。",
+        "已有页面只允许 edit，避免修好一处却重写并破坏其他部分。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "有界循环",
+      "items": [
+        "普通问题只重试有限轮；运行错误可得到额外修复机会。",
+        "未通过但仍能播放的页面标为 flagged，不会被静默当成完美结果。"
+      ]
+    }
+  ]
+}
