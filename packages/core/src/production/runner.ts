@@ -370,8 +370,12 @@ export function createProductionRunner(
           if (p.reviewTask && p.reviewTask.sceneId !== p.scenes[index].id)
             continue;
           activeSceneId = p.scenes[index].id;
-          if (!p.scenes[index].artwork)
+          if (!p.scenes[index].artwork) {
+            // The previous page's review leaves phase='reviewing'; drawing
+            // failures must resume as illustration, not as another review.
+            phase = 'illustrating';
             p = await ops.illustrateScene(p, index, signal);
+          }
           await log(
             `第 ${index + 1}/${p.scenes.length} 页绘图已完成`,
             'illustrating',

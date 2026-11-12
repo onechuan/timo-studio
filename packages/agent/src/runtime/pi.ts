@@ -13,6 +13,7 @@ import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messag
 import { Type, type TSchema } from 'typebox';
 import type { JsonGenerator } from '../director/index.js';
 import { providerFailureCode } from './failures.js';
+import { withModelRetry } from './retry.js';
 export function modelConfig(env: NodeJS.ProcessEnv = process.env) {
   const provider = env.TIMO_PROVIDER || 'openai';
   const key =
@@ -46,7 +47,7 @@ export function piGenerator(
 // Shared transport: vision adds actual Pi image blocks while text callers keep their API.
 export function piRuntime(env: NodeJS.ProcessEnv, vision = false) {
   const config = modelConfig(env);
-  const run = async (
+  const runOnce = async (
     system: string,
     user: string,
     signal?: AbortSignal,
@@ -215,6 +216,19 @@ export function piRuntime(env: NodeJS.ProcessEnv, vision = false) {
       signal?.removeEventListener('abort', abort);
     }
   };
+  /** A provider stream can report a timeout after the request succeeded. Retry
+   *  the whole prompt once for transient codes; deterministic failures surface. */
+  const run = (
+    system: string,
+    user: string,
+    signal?: AbortSignal,
+    images?: ImageContent[],
+    structuredSchema?: TSchema,
+  ) =>
+    withModelRetry(
+      () => runOnce(system, user, signal, images, structuredSchema),
+      signal,
+    );
   return {
     generate(
       system: string,

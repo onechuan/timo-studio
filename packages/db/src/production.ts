@@ -81,14 +81,15 @@ export function productionStore(db: PrismaClient): ProductionStore {
           failure: undefined,
           error: undefined,
           failedAction: undefined,
+          // A pipeline resume must not keep a page-scoped review task from an
+          // earlier failure; otherwise only that page is processed and pages
+          // still waiting for artwork are skipped.
           reviewTask: options?.illustrationSceneId
             ? {
                 sceneId: options.illustrationSceneId,
                 mode: options.reviewMode ?? 'illustrate',
               }
-            : current.stage === 'failed' && current.failedAction === type
-              ? current.reviewTask
-              : undefined,
+            : undefined,
         };
         if (
           type === 'produce' &&
