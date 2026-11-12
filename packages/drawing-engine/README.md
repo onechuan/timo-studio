@@ -1,6 +1,8 @@
-# @frametell/engine
+# @timotv/drawing-engine
 
-Frametell's video engine. A video is a project directory; the engine plays it, takes snapshots of it and renders it to MP4.
+TimoTV's programmable drawing engine, maintained in this repository under
+AGPL-3.0-only. A video is a project directory; the engine plays it, takes
+snapshots of it and renders it to MP4.
 
 ## Project directory
 

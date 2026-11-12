@@ -2,7 +2,7 @@
   "name": "@timotv/drawing-engine",
   "version": "0.1.0",
   "private": true,
-  "description": "TimoTV programmable hand-drawn video engine, derived from Frametell.",
+  "description": "TimoTV programmable hand-drawn video engine.",
   "license": "AGPL-3.0-only",
   "author": "Sitor Team and TimoTV contributors",
   "type": "module",

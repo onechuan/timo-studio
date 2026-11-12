@@ -12,7 +12,7 @@ describe('drawing engine licensing', () => {
     expect(license).toContain('GNU AFFERO GENERAL PUBLIC LICENSE');
     expect(notices).toContain('Frametell');
     expect(notices).toMatch(/rough\.?js/i);
-    expect(provenance).toContain('/Users/onechuan/code/ai/open/frametell');
+    expect(provenance).toContain('https://github.com/sitor-ai/frametell');
     expect(provenance).toContain('AGPL-3.0-only');
   });
 });

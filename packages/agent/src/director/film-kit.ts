@@ -19,17 +19,16 @@ export const KIT_MAX = 3;
 const ENGINE_ROOT = fileURLToPath(
   new URL('../../../drawing-engine/', import.meta.url),
 );
-const upstreamManifestSource = readFileSync(
-  join(ENGINE_ROOT, 'upstream.json'),
+const enginePackageSource = readFileSync(
+  join(ENGINE_ROOT, 'package.json'),
   'utf8',
 );
-const upstreamManifest = JSON.parse(upstreamManifestSource) as {
-  revision: string;
-};
-export const FRAMETELL_UPSTREAM_REVISION = upstreamManifest.revision;
-export const FRAMETELL_ENGINE_REVISION = `sha256:${createHash('sha256')
-  .update(upstreamManifestSource, 'utf8')
-  .digest('hex')}`;
+const enginePackageDigest = createHash('sha256')
+  .update(enginePackageSource, 'utf8')
+  .digest('hex');
+/** Local source revision of the vendored engine, recorded with each production. */
+export const ENGINE_SOURCE_REVISION = enginePackageDigest.slice(0, 40);
+export const ENGINE_CONTENT_REVISION = `sha256:${enginePackageDigest}`;
 const styleMap: Record<Production['brief']['style'], DrawingStyle> = {
   warm: 'warm-story',
   chalk: 'chalkboard',

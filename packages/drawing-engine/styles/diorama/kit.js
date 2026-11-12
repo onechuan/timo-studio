@@ -1,4 +1,4 @@
-/* 3D Miniature City · kit (original work for Frametell Cloud). P.diorama(...) opens a three.js scene: a block of land on a
+/* 3D Miniature City · kit (original work for TimoTV). P.diorama(...) opens a three.js scene: a block of land on a
  * floating soil slab, shot from above with a tilt-shift lens. It returns D, whose methods add things to the model —
  * terrain with hills, rivers and coast, city blocks that rise from the ground (or grow year by year), roads and rails with
  * little cars and trains, water that rises on cue, rain, ports with cranes and ships, landmarks, power lines, highlighted

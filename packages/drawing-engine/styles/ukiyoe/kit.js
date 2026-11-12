@@ -559,13 +559,13 @@
     const at = o.at ?? 0.1, T = this.hud || this, latin = !/[㐀-鿿]/.test(str);
     if (latin) {
       const size = o.size ?? 46, c = T.cartouche(str, STAGE.title.x, STAGE.title.y - 28, { size, at, dir: 'h', fill: o.fill ?? 'yellow' });
-      if (o.seal !== false) T.seal(STAGE.title.x + c.w + 18, STAGE.title.y - 22, o.seal || '帧言', { size: 52, at: at + 1.2 });
+      if (o.seal !== false) T.seal(STAGE.title.x + c.w + 18, STAGE.title.y - 22, o.seal || 'TimoTV', { size: 52, at: at + 1.2 });
       return c.text;
     }
     const n = [...String(str).replace(/\s+/g, '')].length, size = o.size ?? (n > 12 ? 40 : n > 9 ? 46 : 52);
     const pad = size * 0.38, w = size + pad * 2, x = W - 120 - w;
     const c = T.cartouche(str.replace(/\s+/g, ''), x, STAGE.title.y - 8, { size, at, dir: 'v', fill: o.fill ?? 'yellow' });
-    if (o.seal !== false) T.seal(x + (w - 52) / 2, STAGE.title.y - 8 + c.h + 18, o.seal || '帧言', { size: 52, at: at + 1.2 });
+    if (o.seal !== false) T.seal(x + (w - 52) / 2, STAGE.title.y - 8 + c.h + 18, o.seal || 'TimoTV', { size: 52, at: at + 1.2 });
     return c.text;
   };
 

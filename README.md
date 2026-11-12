@@ -15,22 +15,21 @@
 - **后台恢复**：PostgreSQL 保存制作检查点，Redis/BullMQ 执行耗时任务；中断后可从已完成阶段继续。
 - **时长控制**：AI 口播会按目标区间自动校正；逐字原稿不会被改写，超时后由用户决定修改或接受真实时长。
 
-## Frametell 视频效果对齐
+## 绘图引擎 V3 品质管线
 
-绘图引擎锁定到 Frametell 上游修订 `6145f7e3482628543bd6f2d68fe3b618d366213a`，并在其基础上完成：
+绘图引擎源码直接维护在 `packages/drawing-engine`，构建、测试和运行都不需要外部仓库或上游包。该管线包含：
 
-- 7 组固定场景的逐帧像素回归；
 - Film Kit、页级审片/修复与全片一致性审查；
 - 预览、审片、导出三条链路的视觉载荷统一；
-- 6 类主题、18 组样本的盲评基准工具和发布门禁。
+- 受控开关与持久化的管线选择。
 
-Frametell 品质管线仍处于受控发布阶段。新环境默认使用 `legacy-v3`；可在服务设置中选择 `frametell-parity`，或在服务端 `.env` 中临时强制启用：
+V3 品质管线仍处于受控发布阶段。新环境默认使用 `legacy-v3`；可在服务设置中选择 `drawing-engine-v3`，或在服务端 `.env` 中临时强制启用：
 
 ```dotenv
-TIMOTV_FRAMETELL_PARITY=1
+TIMOTV_VIDEO_PIPELINE=drawing-engine-v3
 ```
 
-`--fixture` 基准用于验证工具和门禁逻辑，不等同于真实三人盲评。默认切换前仍需使用真实生成结果完成人工验收。
+默认切换前仍需使用真实生成结果完成人工验收。
 
 ## 环境要求
 
@@ -79,11 +78,9 @@ pnpm dev
 | `pnpm dev` | 并发启动 Web、API 和 Worker |
 | `pnpm build` | 构建全部 workspace 包 |
 | `pnpm typecheck` | 执行全仓库 TypeScript 检查 |
-| `pnpm test` | 运行单元与确定性视觉回归测试 |
+| `pnpm test` | 运行单元测试 |
 | `pnpm test:integration` | 使用真实 PostgreSQL、Redis、Worker、浏览器与编码器运行集成测试 |
 | `pnpm test:e2e` | 运行 Playwright 端到端测试 |
-| `pnpm engine:audit` | 检查绘图引擎上游修订与已批准偏差 |
-| `pnpm benchmark:video-parity -- --fixture` | 运行 18 组视频效果门禁夹具 |
 | `pnpm infra:down` | 停止本地基础设施并保留数据卷 |
 
 集成测试前需启动基础设施并应用迁移；首次运行浏览器测试可执行 `pnpm exec playwright install chromium`。
@@ -117,8 +114,8 @@ apps/web  ──HTTP──> apps/api ──enqueue──> Redis / BullMQ
 - [架构与约束](docs/architecture.md)
 - [验证记录](docs/verification.md)
 - [后续路线图](docs/roadmap.md)
-- [Frametell 视频效果对齐设计](docs/superpowers/specs/2026-11-11-frametell-video-effect-parity-design.md)
+- [绘图引擎 V3 集成说明](docs/verification/drawing-engine-v3-integration.md)
 
 ## 开源许可
 
-TimoTV 使用 [GNU AGPL-3.0-only](LICENSE) 许可。绘图引擎包含基于 Frametell 0.8.0 的派生实现；上游来源、许可和本地修改说明见 [`docs/OPEN_SOURCE.md`](docs/OPEN_SOURCE.md) 与 [`docs/UPSTREAM_PATCHES.md`](docs/UPSTREAM_PATCHES.md)。
+TimoTV 使用 [GNU AGPL-3.0-only](LICENSE) 许可。绘图引擎包含基于 Frametell 0.8.0 的派生实现；上游来源、许可和本地修改说明见 [`docs/OPEN_SOURCE.md`](docs/OPEN_SOURCE.md) 与 [`docs/DRAWING_ENGINE_CHANGES.md`](docs/DRAWING_ENGINE_CHANGES.md)。

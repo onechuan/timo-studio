@@ -29,7 +29,7 @@ if (TWIN) process.env.PORTRAIT = '1';
 if (has('hw')) process.env.HW = '1';
 const JPEG = +arg('jpeg-quality', 92);
 process.env.JPEG_QUALITY = String(JPEG);
-// --watermark: a small Frametell mark in a corner of every frame, drawn with the page (a free plan's films on a hosted
+// --watermark: a small TimoTV mark in a corner of every frame, drawn with the page (a free plan's films on a hosted
 // service); children inherit WATERMARK=1, and marked segments are cached apart from unmarked ones
 const WATERMARK = has('watermark');
 if (WATERMARK) process.env.WATERMARK = '1';

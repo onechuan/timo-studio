@@ -5,8 +5,8 @@ import { z } from 'zod';
 
 import {
   drawingStyleForProduction,
-  FRAMETELL_ENGINE_REVISION,
-  FRAMETELL_UPSTREAM_REVISION,
+  ENGINE_CONTENT_REVISION,
+  ENGINE_SOURCE_REVISION,
   generateFilmKitPart,
   planFilmKit,
   piVisionGenerator,
@@ -63,8 +63,8 @@ export function planProductionFilmKit(production: Production): Production {
     ...production,
     visual: {
       ...production.visual,
-      upstreamRevision: FRAMETELL_UPSTREAM_REVISION,
-      engineRevision: FRAMETELL_ENGINE_REVISION,
+      upstreamRevision: ENGINE_SOURCE_REVISION,
+      engineRevision: ENGINE_CONTENT_REVISION,
       style: drawingStyleForProduction(production),
       filmKit: planned.length
         ? {

@@ -631,13 +631,13 @@
     const at = o.at ?? 0.15, T = this.hud || this, chars = [...String(str)].filter((ch) => ch !== ' ');
     if (!/[㐀-鿿]/.test(str)) {
       const size = o.size ?? 52, t = T.text(str, { x: STAGE.title.x, y: STAGE.title.y - 4, size, weight: 600, at, cps: o.cps ?? 16, color: 'ink' });
-      if (o.seal !== false) T.seal(STAGE.title.x + Math.min(W - 420, PV.tw(str, size) * 0.98) + 22, STAGE.title.y + 8, o.seal || '帧言', { size: 44, at: at + t.a.dur + 0.1 });
+      if (o.seal !== false) T.seal(STAGE.title.x + Math.min(W - 420, PV.tw(str, size) * 0.98) + 22, STAGE.title.y + 8, o.seal || 'TimoTV', { size: 44, at: at + t.a.dur + 0.1 });
       return t;
     }
     const n = chars.length, size = o.size ?? (n > 12 ? 46 : n > 9 ? 52 : 60), adv = size * 1.12;
     const x = W - 130 - size, y = STAGE.title.y + 14;
     const t = T.text(str.replace(/\s+/g, ''), { x, y, size, at, cps: o.cps ?? 7, color: 'ink', font: 'brush', cls: 'vt', lh: 1.2 });
-    if (o.seal !== false) T.seal(x + size / 2 - 20, y + n * adv + 22, o.seal || '帧言', { size: 40, at: at + t.a.dur + 0.1 });
+    if (o.seal !== false) T.seal(x + size / 2 - 20, y + n * adv + 22, o.seal || 'TimoTV', { size: 40, at: at + t.a.dur + 0.1 });
     return t;
   };
 

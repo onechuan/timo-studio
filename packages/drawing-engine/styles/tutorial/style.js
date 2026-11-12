@@ -1,4 +1,4 @@
-/* Product Tutorial: lessons told on real screenshots of the Frametell studio, on the studio's own dark ground. kit.js draws it. */
+/* Product Tutorial: lessons told on real screenshots of the TimoTV studio, on the studio's own dark ground. kit.js draws it. */
 window.EXTRA_FONTS = (window.EXTRA_FONTS || []).concat([
   '700 40px "Inter Variable"', '600 40px "Inter Variable"', '500 40px "Inter Variable"',
   '700 40px "Noto Sans SC Variable"', '500 40px "Noto Sans SC Variable"',

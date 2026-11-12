@@ -8,7 +8,7 @@ import { linkProject } from '../tools/project.mjs';
 
 /** Copy a project to a fresh temp directory and link it there; run `fn` with that directory, then remove it. */
 export function withLinkedCopy(src, fn) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'frametell-test-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'timotv-test-'));
   try {
     fs.cpSync(src, dir, { recursive: true, filter: (f) => !/[\\/](engine|engine_modules|out)$/.test(f) });
     linkProject(dir);

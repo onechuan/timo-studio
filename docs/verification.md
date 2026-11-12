@@ -16,7 +16,7 @@ Pi 适配器现在读取终止原因与工具提交错误，区分认证、额�
 
 播放器补充（2026-11-08）：实现悬浮控制条、中央播放入口、进度与时间、静音、倍速、全屏和快捷键，闲置隐藏并支持键盘焦点唤回。65 项单元测试通过/1 项可选测试跳过，真实制作和 sandbox 预览集成 5 项通过；工作台桌面/手机 8 项相关用例通过（播放器 4 项完成最终复测）。模拟音频最初未提供 Range 响应导致 seek 失败，补齐测试响应后通过。类型检查、Renderer/Web/API 构建通过。已检查横竖屏截图，并只读打开现有作品确认新版播放器立即可用；截图位于 `.data/verification/player-ui/`。未重新生成用户的视频或调用外部 AI/TTS。
 
-最新补充（2026-11-08）：参考帧言优化内置 Skills，增加按阶段加载的 shared 导演/口播方法，修复写稿阶段未传原始 topic 的问题。Agent 构建、测试类型检查通过，单元 64 项通过/1 项可选测试跳过，制作集成 4 项通过。独立离线场景复核覆盖一句短稿、VO 逐字保留及稀疏产品信息；未调用付费服务。过程和验证边界见 [Skills 评估记录](superpowers/specs/2026-11-08-frametell-skills-evaluation.md)。
+最新补充（2026-11-08）：优化内置 Skills，增加按阶段加载的 shared 导演/口播方法，修复写稿阶段未传原始 topic 的问题。Agent 构建、测试类型检查通过，单元 64 项通过/1 项可选测试跳过，制作集成 4 项通过。独立离线场景复核覆盖一句短稿、VO 逐字保留及稀疏产品信息；未调用付费服务。过程和验证边界见本地 Skills 评估记录。
 
 验证日期：2026-11-08（Asia/Shanghai）。本机 Node 24.19.0、pnpm 10.33.2、Docker Desktop。
 
@@ -58,7 +58,7 @@ Pi 模型适配通过本地 OpenAI 兼容 SSE 接口与真实 submit 工具循�
 
 默认配音切换为 volcengine，新增服务端 HTTP 流式适配器与 API Key/旧版鉴权。只修改配音参数时保留分镜和讲稿。42 项单元测试通过，其中火山请求使用测试边界，PCM 转换、音频合并和 SRT 实际执行；8 项集成测试通过。构建和完整类型检查通过。未配置真实火山语音 Key，未发起付费合成请求。
 
-## 帧言布局参考与 TimoTV 原配色（2026-11-08）
+## 工作台布局与 TimoTV 原配色（2026-11-08）
 
 首页改为居中主题创作框，可折叠资料与详细设置。生成项目采用导演 / 画面双栏、分镜选择、口播与导出标签，手机可切换区域。按用户后续要求沿用原深灰蓝底色 `#101217` 和青柠绿强调色 `#c8f17a`。
 
@@ -137,12 +137,11 @@ Pi 模型适配通过本地 OpenAI 兼容 SSE 接口与真实 submit 工具循�
 - UI 展示目标、允许区间、估算、真实时长和校正轮次；失败卡根据 phase/context 只提供一个主要恢复动作，技术信息仅显示诊断 ID、错误码和阶段。
 - 聚焦验证已通过：结构化失败/Runner/恢复/时长单元测试，真实 TSX Chrome、审片截图、V3 MP4、生产链与时长缓存集成测试，以及桌面/手机时长与失败卡 E2E。完整工作区验证命令见本节对应开发文档；不以外部收费模型的内容质量替代程序验收。
 
-## Frametell 视频效果对齐（2026-11-12）
+## 绘图引擎 V3 品质管线（2026-11-12）
 
-- 视觉规范源锁定为 Frametell `6145f7e3482628543bd6f2d68fe3b618d366213a`。`pnpm engine:audit` 通过：没有缺失、意外或未批准的源码漂移；报告中的差异均为清单内 adapter。
+- 绘图引擎源码维护在本仓库 `packages/drawing-engine`；构建、`pnpm test` 和运行不再读取外部仓库 checkout，也不再提供上游同步或审计脚本。
 - 已接入同源绘图引擎、Film Kit、页级关键帧审片与最多两轮修正、全片联系表与跨页定点修正。预览、审片和 MP4 导出共享同一受校验视觉载荷及 `renderAt(globalMs)`。
-- `pnpm typecheck` 通过；`pnpm test` 最终 43 个测试文件通过，283 项通过、1 项可选真实媒体测试跳过。六类固定视觉样本 7 项像素回归全部通过。
-- `RUN_INTEGRATION=1 PLAYWRIGHT_CHANNEL=chrome pnpm test:integration`：11 个文件、35 项全部通过，覆盖真实 PostgreSQL、Redis、系统配音、Chrome、Film Kit、页级/全片审片、预览和 FFmpeg MP4。
-- `PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e`：桌面/手机 60 项通过，2 项依赖既有作品的可选用例跳过。新增用例实际观察 Film Kit、逐页检查、全片检查、预览就绪与 MP4 导出入口的完整状态序列。
-- `pnpm benchmark:video-parity -- --fixture` 生成 6 个题材 × 3 次的 18 组 A/B 包和 3 份盲评表，程序质量门禁通过。fixture 报告位于 `.data/video-parity/fixture/report.json`；它验证基准工具和阈值，不等同于三名真人完成的真实模型盲评。
-- 因真实三人盲评尚未完成，持久化配置的代码默认仍为 `legacy-v3`，避免无证据地迁移已有项目。本机 `.env` 已按本次明确需求设置 `TIMOTV_FRAMETELL_PARITY=1`，当前运行环境和已有项目强制使用 `frametell-parity`；移除此覆盖后恢复项目记录的链路。
+- `pnpm typecheck` 通过；`pnpm test` 覆盖契约、持久化、制作服务、审片和引擎单元测试。
+- `RUN_INTEGRATION=1 PLAYWRIGHT_CHANNEL=chrome pnpm test:integration`：覆盖真实 PostgreSQL、Redis、系统配音、Chrome、Film Kit、页级/全片审片、预览和 FFmpeg MP4。
+- `PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e`：桌面/手机用例覆盖 Film Kit、逐页检查、全片检查、预览就绪与 MP4 导出入口的完整状态序列。
+- 持久化配置的代码默认仍为 `legacy-v3`。本机 `.env` 使用 `TIMOTV_VIDEO_PIPELINE=drawing-engine-v3` 强制启用当前运行环境；移除此覆盖后恢复项目记录的链路。旧版本持久化的已退役管线值会在读取时归一化为 `legacy-v3`。
