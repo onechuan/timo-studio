@@ -73,15 +73,15 @@ pnpm dev
 
 ## 常用命令
 
-| 命令 | 用途 |
-| --- | --- |
-| `pnpm dev` | 并发启动 Web、API 和 Worker |
-| `pnpm build` | 构建全部 workspace 包 |
-| `pnpm typecheck` | 执行全仓库 TypeScript 检查 |
-| `pnpm test` | 运行单元测试 |
+| 命令                    | 用途                                                           |
+| ----------------------- | -------------------------------------------------------------- |
+| `pnpm dev`              | 并发启动 Web、API 和 Worker                                    |
+| `pnpm build`            | 构建全部 workspace 包                                          |
+| `pnpm typecheck`        | 执行全仓库 TypeScript 检查                                     |
+| `pnpm test`             | 运行单元测试                                                   |
 | `pnpm test:integration` | 使用真实 PostgreSQL、Redis、Worker、浏览器与编码器运行集成测试 |
-| `pnpm test:e2e` | 运行 Playwright 端到端测试 |
-| `pnpm infra:down` | 停止本地基础设施并保留数据卷 |
+| `pnpm test:e2e`         | 运行 Playwright 端到端测试                                     |
+| `pnpm infra:down`       | 停止本地基础设施并保留数据卷                                   |
 
 集成测试前需启动基础设施并应用迁移；首次运行浏览器测试可执行 `pnpm exec playwright install chromium`。
 
@@ -110,6 +110,7 @@ apps/web  ──HTTP──> apps/api ──enqueue──> Redis / BullMQ
 
 ## 验证与文档
 
+- [项目知识库](docs/README.md)：全部文档的索引、现行/历史划分与维护约定
 - [开发与验证](docs/development.md)
 - [架构与约束](docs/architecture.md)
 - [验证记录](docs/verification.md)
