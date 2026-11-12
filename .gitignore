@@ -7,4 +7,3 @@ playwright-report/
 *.log
 .archify/
 .superpowers/
-docs/talks/
