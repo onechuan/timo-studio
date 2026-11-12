@@ -19,7 +19,7 @@ function fixture(
     browser: { ready: boolean; code?: string };
     ffmpeg: { ready: boolean; code?: string };
   },
-  pipeline: 'legacy-v3' | 'frametell-parity' = 'legacy-v3',
+  pipeline: 'legacy-v3' | 'drawing-engine-v3' = 'legacy-v3',
 ) {
   let enabled = configured;
   let doc: Production | null = null;
@@ -70,9 +70,9 @@ it('records the selected video pipeline when a production is created', async () 
   expect((await legacy.service.create('legacy', brief)).videoPipeline).toBe(
     'legacy-v3',
   );
-  const parity = fixture(true, false, undefined, 'frametell-parity');
+  const parity = fixture(true, false, undefined, 'drawing-engine-v3');
   const created = await parity.service.create('parity', brief);
-  expect(created.videoPipeline).toBe('frametell-parity');
+  expect(created.videoPipeline).toBe('drawing-engine-v3');
   expect(
     (
       await parity.service.update('parity', {
@@ -80,7 +80,7 @@ it('records the selected video pipeline when a production is created', async () 
         brief: { ...brief, topic: '更新后仍保持链路' },
       })
     ).videoPipeline,
-  ).toBe('frametell-parity');
+  ).toBe('drawing-engine-v3');
 });
 it('reports browser readiness separately and blocks only browser-dependent work', async () => {
   const f = fixture(true, false, {

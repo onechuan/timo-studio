@@ -32,7 +32,7 @@ const labels = {
   failed: '制作失败',
 };
 function ParityProgress({ doc }: { doc: Production }) {
-  if (doc.videoPipeline !== 'frametell-parity') return null;
+  if (doc.videoPipeline !== 'drawing-engine-v3') return null;
   const kit = doc.visual?.filmKit;
   const kitDone =
     kit?.components.filter((component) =>
@@ -50,7 +50,7 @@ function ParityProgress({ doc }: { doc: Production }) {
   const wholeActive =
     !!whole && ['checking', 'repairing'].includes(whole.status);
   return (
-    <section className="parity-progress" aria-label="帧言品质制作进度">
+    <section className="parity-progress" aria-label="绘图引擎品质制作进度">
       <div className={kitActive ? 'current' : 'done'}>
         <span>{working(kitActive)}</span>
         <p>

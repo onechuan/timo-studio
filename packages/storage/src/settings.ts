@@ -7,10 +7,11 @@ import {
   settingsUpdateSchema,
   type AppSettings,
   type SettingsUpdate,
+  type VideoPipeline,
 } from '@timotv/contracts';
 type Saved = {
   revision: number;
-  production: { videoPipeline: 'legacy-v3' | 'frametell-parity' };
+  production: { videoPipeline: VideoPipeline };
   model: Record<string, string | null>;
   reviewer?: Record<string, string | boolean | null>;
   speech: {
@@ -53,8 +54,7 @@ export class LocalSettingsStore {
   private deriveEnv(s: Saved): NodeJS.ProcessEnv {
     const env: NodeJS.ProcessEnv = {};
     for (const k of [
-      'TIMOTV_FRAMETELL_PARITY',
-      'TIMO_VIDEO_PIPELINE',
+      'TIMOTV_VIDEO_PIPELINE',
       'TIMO_REVIEW_ENABLED',
       'TIMO_REVIEW_PROVIDER',
       'TIMO_REVIEW_MODEL',

@@ -47,8 +47,8 @@ export async function openStage(query, launchArgs = []) {
   const gl = loadEpisode().META.webgl ? ['--use-angle=metal', '--ignore-gpu-blocklist', '--enable-gpu-rasterization'] : [];
   // the window at the stage's own size: CDP captures what the window shows, and a Chrome whose default window is shorter
   // than the stage (1920×993 on a Mac) left the bottom rows of every frame black
-  // FRAMETELL_CHROME_ARGS: flags the machine needs, e.g. a render box drawing on its NVIDIA card through EGL
-  const extra = (process.env.FRAMETELL_CHROME_ARGS || '').split(' ').filter(Boolean);
+  // TIMOTV_CHROME_ARGS: flags the machine needs, e.g. a render box drawing on its NVIDIA card through EGL
+  const extra = (process.env.TIMOTV_CHROME_ARGS || '').split(' ').filter(Boolean);
   const browser = await chromium.launch({ executablePath: findChrome(), args: [`--window-size=${SIZE.width},${SIZE.height}`, ...launchArgs, ...gl, ...extra] });
   const page = await browser.newPage({ viewport: SIZE, deviceScaleFactor: 1 });
   page.on('pageerror', (e) => console.error('pageerror', e.message));

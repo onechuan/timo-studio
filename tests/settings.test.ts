@@ -10,35 +10,56 @@ import {
   settingsSchema,
 } from '../packages/contracts/src/settings.js';
 
-test('video pipeline defaults safely and accepts parity explicitly', async () => {
+test('video pipeline defaults safely and accepts the drawing engine explicitly', async () => {
   expect(settingsSchema.parse({}).production.videoPipeline).toBe('legacy-v3');
   expect(
     settingsSchema.parse({
-      production: { videoPipeline: 'frametell-parity' },
+      production: { videoPipeline: 'drawing-engine-v3' },
     }).production.videoPipeline,
-  ).toBe('frametell-parity');
+  ).toBe('drawing-engine-v3');
+  expect(() =>
+    settingsSchema.parse({ production: { videoPipeline: 'retired-parity' } }),
+  ).toThrow();
   expect(resolveVideoPipeline('legacy-v3', {})).toBe('legacy-v3');
   expect(
-    resolveVideoPipeline('legacy-v3', { TIMOTV_FRAMETELL_PARITY: '1' }),
-  ).toBe('frametell-parity');
+    resolveVideoPipeline('legacy-v3', {
+      TIMOTV_VIDEO_PIPELINE: 'drawing-engine-v3',
+    }),
+  ).toBe('drawing-engine-v3');
   expect(
-    resolveVideoPipeline('frametell-parity', {
-      TIMOTV_FRAMETELL_PARITY: '0',
+    resolveVideoPipeline('drawing-engine-v3', {
+      TIMOTV_VIDEO_PIPELINE: 'legacy-v3',
     }),
   ).toBe('legacy-v3');
+  expect(resolveVideoPipeline('retired-parity', {})).toBe('legacy-v3');
 
   const dir = await mkdtemp(join(tmpdir(), 'pipeline-settings-'));
   try {
-    const store = new LocalSettingsStore(join(dir, 'settings.json'), {});
+    const file = join(dir, 'settings.json');
+    const store = new LocalSettingsStore(file, {});
     expect((await store.get()).production.videoPipeline).toBe('legacy-v3');
     const saved = await store.update({
       revision: 0,
-      production: { videoPipeline: 'frametell-parity' },
+      production: { videoPipeline: 'drawing-engine-v3' },
     });
-    expect(saved.production.videoPipeline).toBe('frametell-parity');
+    expect(saved.production.videoPipeline).toBe('drawing-engine-v3');
     expect((await store.runtimeEnv()).TIMO_VIDEO_PIPELINE).toBe(
-      'frametell-parity',
+      'drawing-engine-v3',
     );
+    const retired = join(dir, 'retired.json');
+    await writeFile(
+      retired,
+      JSON.stringify({
+        revision: 0,
+        production: { videoPipeline: 'retired-parity' },
+        model: {},
+        speech: { volcengine: {}, elevenlabs: {} },
+      }),
+    );
+    expect(
+      (await new LocalSettingsStore(retired, {}).get()).production
+        .videoPipeline,
+    ).toBe('legacy-v3');
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

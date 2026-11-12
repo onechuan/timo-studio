@@ -16,8 +16,8 @@ export function engineModulesDir() {
   // a workspace or a plain install of the engine keeps a node_modules next to the package with every dependency in it
   const own = path.join(ENGINE_DIR, 'node_modules');
   if (whole(own)) return own;
-  // installed as a dependency (node_modules/@frametell/engine): its dependencies sit beside it, whether npm hoisted them
-  // there or pnpm's store linked them in (.pnpm/@frametell+engine…/node_modules)
+  // installed as a dependency (node_modules/@timotv/drawing-engine): its dependencies sit beside it, whether npm hoisted them
+  // there or pnpm's store linked them in (.pnpm/@timotv+drawing-engine…/node_modules)
   const beside = path.resolve(ENGINE_DIR, '../..');
   if (whole(beside)) return beside;
   // last resort: where roughjs resolves to. Under pnpm that is roughjs's own store folder, without the fonts

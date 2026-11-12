@@ -22,7 +22,7 @@ const PAGE = (edits, before = '') => `ENGINE.visual('p01', (P) => {${before}
 ${edits ? `ENGINE.edits('p01', ${JSON.stringify(edits)});\n` : ''}`;
 
 async function built(edits, before) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'frametell-edits-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'timotv-edits-'));
   try {
     createProject(dir, { title: 'Edits', lang: 'en' });
     fs.writeFileSync(path.join(dir, 'pages/p01.js'), PAGE(edits, before));
@@ -116,7 +116,7 @@ test('edits: a thing drawn in another of the style\'s colours', async () => {
 });
 
 test('edits: a thing shown later: every act it registers moves by the shift, the others stay', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'frametell-edits-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'timotv-edits-'));
   try {
     createProject(dir, { title: 'Edits', lang: 'en' });
     fs.writeFileSync(path.join(dir, 'pages/p01.js'), `ENGINE.visual('p01', (P) => {

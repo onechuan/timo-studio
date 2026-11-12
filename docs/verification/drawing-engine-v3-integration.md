@@ -4,7 +4,7 @@ Date: 2026-11-10
 
 ## Outcome
 
-TimoTV now generates, previews, reviews, seeks, and exports programmable drawing pages through the migrated Frametell drawing engine. New production and repair jobs use `SceneProgramV3`; persisted V1/V2 artwork remains renderable through a bridge in the same measured timeline.
+TimoTV now generates, previews, reviews, seeks, and exports programmable drawing pages through the bundled drawing engine. New production and repair jobs use `SceneProgramV3`; persisted V1/V2 artwork remains renderable through a bridge in the same measured timeline.
 
 The production path is:
 
@@ -71,4 +71,4 @@ The MP4 integration test generated a real two-second chalkboard program, wrote a
 - Existing projects keep their current artwork until a page or the full illustration stage is regenerated.
 - New `produce`, `illustrate`, and repair jobs use V3 automatically through the worker adapter.
 - Volcengine TTS remains the configured production narration provider; the MP4 smoke test uses a local generated WAV only to avoid a paid external request.
-- AGPL provenance, the unmodified upstream inventory, and reviewed compatibility patches remain documented in `THIRD_PARTY_NOTICES.md`, `packages/drawing-engine/LICENSE`, and `docs/UPSTREAM_PATCHES.md`.
+- AGPL provenance and reviewed engine changes are documented in `THIRD_PARTY_NOTICES.md`, `packages/drawing-engine/LICENSE`, and `docs/DRAWING_ENGINE_CHANGES.md`.

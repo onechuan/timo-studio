@@ -2,7 +2,7 @@
  * gutters, G-pen ink that swells and tapers, screentone (dot tones, dot gradients, line tone) instead of grey,
  * concentration lines and speed lines, a manga character with big eyes and eight expressions, balloons with vertical
  * lettering, hand-lettered sound effects, the ゴゴゴ menace, a shadow boss for a shōnen showdown, and the realisation
- * splash. Written for Frametell Cloud; no third-party code.
+ * splash. Written for TimoTV; no third-party code.
  * Every component is a pure function of page-local time lt: no Math.random, Date or requestAnimationFrame; jitter is
  * hash-stepped. Any option marked "fn" may be a value, a function of lt, or a keyframe list [[t0, v0], [t1, v1], …]. */
 (function () {

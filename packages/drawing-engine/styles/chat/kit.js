@@ -3,7 +3,7 @@
  * notifications, an incoming call, a transfer screen, a social feed, a search box with suggestions, a chat list; and on the
  * soft colour ground around the phones: explainer notes, big numbers, tags, giant floating bubbles.
  * Every component lays itself out (text wraps, the chat scrolls, nothing leaves the phone or the frame) and is a pure
- * function of page-local time lt. Generic UI only: no real app's name, logo or trade dress. Written for Frametell Cloud. */
+ * function of page-local time lt. Generic UI only: no real app's name, logo or trade dress. Written for TimoTV. */
 (function () {
   const { col, clamp, lerp, ease, Builder, h } = PV;
   const B = Builder.prototype;

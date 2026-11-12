@@ -5,7 +5,7 @@
  * demo layer: an arrow cursor that glides on curves and clicks with a ripple, auto-zooming the camera onto the click; keycaps
  * for shortcuts; numbered step badges; a spotlight; a before/after wipe.
  * Every component is a pure function of page-local time lt. Generic UI only: no real product's name, logo or layout.
- * Written for Frametell Cloud. */
+ * Written for TimoTV. */
 (function () {
   const { col, clamp, lerp, ease, Builder, h } = PV;
   const B = Builder.prototype;

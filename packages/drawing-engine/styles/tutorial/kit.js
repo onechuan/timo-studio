@@ -1,4 +1,4 @@
-/* Product Tutorial · kit: a lesson told on real screenshots of the Frametell studio. A browser window holds the 2× shot
+/* Product Tutorial · kit: a lesson told on real screenshots of the TimoTV studio. A browser window holds the 2× shot
  * (1600×900 CSS px); the pointer glides to a recorded box and clicks, a spotlight dims all but that box, the camera pushes in,
  * text types itself into an input, the after-shot cross-fades in. Boxes are [x, y, w, h] in the shot's CSS px, copied from
  * materials/steps.md. Every component is a pure function of page-local time lt. Internal style, not sold. */
@@ -68,7 +68,7 @@
       set(frame, 'opacity', k); set(rule, 'opacity', kp); set(pill, 'opacity', kp);
       dots.forEach((d) => set(d, 'opacity', kp));
     });
-    const url = h('div', 'tt-url', esc(o.url ?? 'frametell.ai/studio'), this.html);
+    const url = h('div', 'tt-url', esc(o.url ?? 'timotv.local/studio'), this.html);
     Object.assign(url.style, { left: x + 138 + 'px', top: y + 11 + 'px', width: w - 190 + 'px' });
     this.tick((lt) => set(url, 'opacity', fin(lt, at + 0.55, 0.4).toFixed(3)));
     // the shot's own view (B.browser's div.media): hidden from the first swap's frame on

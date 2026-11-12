@@ -63,7 +63,7 @@ pnpm test:e2e
 
 在首页或工作台的「创作设置 → 创作方向」选择通用讲解、科普口播或产品介绍。产品介绍可附上产品资料，以便模型使用有依据的功能信息。修改后保存主题与资料，再规划分镜。
 
-内置写作规则位于 `packages/agent/skills/`。每个方向目录包含 `SKILL.md`、`references/planning.md` 和 `references/script.md`；`shared/planning.md` 与 `shared/script.md` 保存跨方向的导演与口播方法，`README.md` 说明参考帧言时的取舍。代码按创作方向和当前阶段加载，不需要用户手动调用 Skill。修改规则文件对下一次生成生效；进行中的生成使用已加载内容。新增方向需要同步更新 contracts 枚举与标签、agent 目录映射、对应文件和测试，UI 会根据共享选项展示。
+内置写作规则位于 `packages/agent/skills/`。每个方向目录包含 `SKILL.md`、`references/planning.md` 和 `references/script.md`；`shared/planning.md` 与 `shared/script.md` 保存跨方向的导演与口播方法，`README.md` 说明取舍。代码按创作方向和当前阶段加载，不需要用户手动调用 Skill。修改规则文件对下一次生成生效；进行中的生成使用已加载内容。新增方向需要同步更新 contracts 枚举与标签、agent 目录映射、对应文件和测试，UI 会根据共享选项展示。
 
 验证规则接入：`pnpm build:packages && pnpm exec vitest run tests/director.test.ts tests/production.test.ts tests/production-service.test.ts`。这些测试验证加载与流程约束，使用测试模型返回值；真实模型的内容质量需要单独人工评估。
 
@@ -86,7 +86,7 @@ Pi 适配器支持内置 provider；也兼容 `OPENAI_API_KEY`、`ANTHROPIC_API_
 - macOS 可选择系统 `say`，中文默认 Tingting，英文默认 Samantha。可填写 `say -v '?'` 中已安装的声音名称，无外部费用。
 - 可选 ElevenLabs：配置 `ELEVENLABS_API_KEY`，并在界面填写声音 ID 或设置 `ELEVENLABS_VOICE_ID`。也可在设置页配置；用户批准制作或重新配音时发起请求，按服务商账户计费。
 - 每句独立合成，读取真实 PCM 音频长度，得到句级字幕时间；不提供词级对齐。原文不变时复用项目级配音缓存。
-- 三种模板配色为 warm/chalk/tech，画面当前为受控的 SVG 关系图与拍点动画，并非帧言的完整插画组件库。
+- 三种模板配色为 warm/chalk/tech，画面当前为受控的 SVG 关系图与拍点动画，完整绘图能力由 `drawing-engine-v3` 管线提供。
 - 预览和导出共享 `renderAt(t)`；导出使用 Chrome 截图和 FFmpeg，横屏 1920×1080、竖屏 1080×1920，当前动画采样为 12 fps。
 - 浏览器可通过 `CHROME_PATH` 配置；FFmpeg 由 `ffmpeg-static` 提供，安装脚本在 workspace 中明确放行。
 - 原始帧只在导出期间暂存，结束后清理。API 和 Worker 将 STORAGE_ROOT 相对仓库根目录解析，读取同一个产物目录。

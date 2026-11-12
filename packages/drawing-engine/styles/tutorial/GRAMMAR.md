@@ -1,7 +1,7 @@
 # Product Tutorial · grammar card
 
 Reference: the best software screencasts. One action per scene, the pointer moving with purpose, a spotlight on the
-control, the camera pushing in on the result. Everything the viewer sees is a real screenshot of the Frametell studio from
+control, the camera pushing in on the result. Everything the viewer sees is a real screenshot of the TimoTV studio from
 the recording in `materials/steps.md`, on the studio's own dark ground.
 
 ## In one sentence
