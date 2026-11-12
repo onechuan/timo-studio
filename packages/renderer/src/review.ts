@@ -12,7 +12,7 @@ import { validateFilmTiming } from './preview.js';
 import { createBrowserRuntime } from './browser-runtime.js';
 
 /** Bump whenever deterministic rendering or measurement semantics change. */
-export const REVIEW_ENGINE_VERSION = 'animation-review-4.2';
+export const REVIEW_ENGINE_VERSION = 'animation-review-4.3';
 function stable(value: unknown): string {
   if (value === undefined) return 'null';
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;

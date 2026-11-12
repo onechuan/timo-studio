@@ -68,6 +68,15 @@ export function measureReviewFrame({
   // Null for text that has not been written yet: its wide container is not drawn.
   const boxOf = (el: Element): Box | null =>
     isText(el) ? textBox(el) : el.getBoundingClientRect();
+  // A drawn SVG thing keeps its full geometry while its strokes are still
+  // visibility:hidden. Treat it as absent until at least one shape is shown.
+  const drawn = (el: Element) => {
+    if (el.namespaceURI !== 'http://www.w3.org/2000/svg') return true;
+    const shapes = el.querySelectorAll(
+      'path, line, rect, circle, ellipse, polyline, polygon, text, image, use',
+    );
+    return !shapes.length || [...shapes].some(visible);
+  };
   const viewportBox = (svg: SVGSVGElement) => {
     const v = svg.viewBox.baseVal,
       m = svg.getScreenCTM();
@@ -122,7 +131,7 @@ export function measureReviewFrame({
   for (const el of document.querySelectorAll<SVGGraphicsElement>(
     '[data-artwork-id], [data-item]',
   )) {
-    if (!visible(el)) continue;
+    if (!visible(el) || !drawn(el)) continue;
     const box = boxOf(el);
     if (!box) continue;
     elements.push(el);
@@ -140,7 +149,7 @@ export function measureReviewFrame({
     if (!decorative && outside(box, canvas))
       add('变换后的对象超出画面边界。', [id]);
     if (!decorative && caption?.textContent && intersects(box, captionBox))
-      add('对象侵占字幕文字区域。', [id]);
+      add('对象侵占字幕文字区域。', [id], 'warning');
     if (
       !decorative &&
       headings.some(

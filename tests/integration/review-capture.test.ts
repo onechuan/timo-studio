@@ -111,6 +111,37 @@ test('centered HTML text is measured by its glyphs, not its full-width box', asy
     await rm(root, { recursive: true, force: true });
   }
 });
+test('undrawn SVG geometry is ignored and subtitle overlap is advisory', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'timo-undrawn-panel-'));
+  try {
+    const p = fixture();
+    const source =
+      "TIMO.visual('scene', P => { P.ring(300, 300, 80, 80, { at: P.c(0) - 1, color: 'yellow' }); P.box(720, 840, 420, 220, { at: P.c(1), dur: 0.5, fill: 'paper', r: 8, sw: 2, color: 'soft' }); });";
+    p.scenes[0]!.artwork = {
+      version: 3,
+      runtime: 'timotv-dsl-1',
+      intent: 'Panel appears over the subtitle safe area later',
+      source,
+      sourceHash: hashProgramSource(source),
+      style: 'chalkboard',
+      extras: [],
+    };
+    const review = await captureSceneReview(
+      p,
+      0,
+      root,
+      AbortSignal.timeout(20000),
+    );
+    expect(review.issues.filter((i) => i.severity === 'error')).toEqual([]);
+    expect(
+      review.issues.some(
+        (i) => i.what.includes('字幕') && i.severity === 'warning',
+      ),
+    ).toBe(true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 test('real Chrome captures isolated evidence at export dimensions, without paid APIs', async () => {
   const root = await mkdtemp(join(tmpdir(), 'timo-review-'));
   const abort = new AbortController();

@@ -46,6 +46,15 @@ export const browserMeasureScript = String.raw`
     };
     // Null for text that has not been written yet: its wide container is not drawn.
     const boxOf = (el) => isText(el) ? textBox(el) : el.getBoundingClientRect();
+    // A drawn SVG thing keeps its full geometry while its strokes are still
+    // visibility:hidden. Treat it as absent until at least one shape is shown.
+    const drawn = (el) => {
+      if (el.namespaceURI !== 'http://www.w3.org/2000/svg') return true;
+      const shapes = el.querySelectorAll(
+        'path, line, rect, circle, ellipse, polyline, polygon, text, image, use'
+      );
+      return !shapes.length || [...shapes].some(visible);
+    };
     const viewportBox = (svg) => {
       const v = svg.viewBox.baseVal, m = svg.getScreenCTM();
       if (!m) return svg.getBoundingClientRect();
@@ -80,7 +89,7 @@ export const browserMeasureScript = String.raw`
         add('标题实际文字超出画面边界。', []);
     const elements = [], boxes = new Map();
     for (const el of document.querySelectorAll('[data-artwork-id], [data-item]')) {
-      if (!visible(el)) continue;
+      if (!visible(el) || !drawn(el)) continue;
       const box = boxOf(el);
       if (!box) continue;
       elements.push(el); boxes.set(el, box);
@@ -94,7 +103,7 @@ export const browserMeasureScript = String.raw`
       if (!decorative && intersects(box, canvas)) subjects++;
       if (!decorative && outside(box, canvas)) add('变换后的对象超出画面边界。', [id]);
       if (!decorative && caption && caption.textContent && intersects(box, captionBox))
-        add('对象侵占字幕文字区域。', [id]);
+        add('对象侵占字幕文字区域。', [id], 'warning');
       if (!decorative && headings.some(h =>
         !el.contains(h.el) && !h.el.contains(el) &&
         intersects(box, h.box)))
