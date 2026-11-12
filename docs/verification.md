@@ -141,7 +141,7 @@ Pi 模型适配通过本地 OpenAI 兼容 SSE 接口与真实 submit 工具循�
 
 - 绘图引擎源码维护在本仓库 `packages/drawing-engine`；构建、`pnpm test` 和运行不再读取外部仓库 checkout，也不再提供上游同步或审计脚本。
 - 已接入同源绘图引擎、Film Kit、页级关键帧审片与最多两轮修正、全片联系表与跨页定点修正。预览、审片和 MP4 导出共享同一受校验视觉载荷及 `renderAt(globalMs)`。
-- `pnpm typecheck` 通过；`pnpm test` 覆盖契约、持久化、制作服务、审片和引擎单元测试。
+- `pnpm typecheck` 通过；`pnpm test` 40 个测试文件通过，277 项通过、1 项可选测试跳过；引擎自带套件 `pnpm --filter @timotv/drawing-engine test` 55 项通过。
 - `RUN_INTEGRATION=1 PLAYWRIGHT_CHANNEL=chrome pnpm test:integration`：覆盖真实 PostgreSQL、Redis、系统配音、Chrome、Film Kit、页级/全片审片、预览和 FFmpeg MP4。
 - `PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e`：桌面/手机用例覆盖 Film Kit、逐页检查、全片检查、预览就绪与 MP4 导出入口的完整状态序列。
 - 持久化配置的代码默认仍为 `legacy-v3`。本机 `.env` 使用 `TIMOTV_VIDEO_PIPELINE=drawing-engine-v3` 强制启用当前运行环境；移除此覆盖后恢复项目记录的链路。旧版本持久化的已退役管线值会在读取时归一化为 `legacy-v3`。

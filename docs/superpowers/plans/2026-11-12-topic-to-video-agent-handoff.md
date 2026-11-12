@@ -5,27 +5,34 @@
 > audit, parity, and A/B benchmark tooling were removed. The pipeline flag is
 > now `drawing-engine-v3` (previously `frametell-parity`), and the environment
 > override is `TIMOTV_VIDEO_PIPELINE` (previously `TIMOTV_FRAMETELL_PARITY`).
-> Old pipeline values are normalized on read. Mentions of the old names or of
-> removed benchmark gates below are historical.
+> Old pipeline values are normalized on read.
+>
+> **Superseded sections:** Sections 4 (pixel regression), 6 (benchmark/audit
+> gaps), 7 (benchmark release loop), 9 (live benchmark gate), 10 (upstream
+> audit command) and 13 (upstream audit criterion) describe removed tooling and
+> are retained as history only. Do not run `pnpm engine:audit` or
+> `pnpm benchmark:video-parity`. Current release state is recorded in
+> `docs/verification.md` and `docs/roadmap.md`. Section 8 is still the next
+> implementation task; use `drawing-engine-v3` as the pipeline value.
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Hand off the merged topic-to-video studio with an evidence-based current-state snapshot and finish the remaining Frametell-quality release gates without overstating fixture results.
+**Goal:** Hand off the merged topic-to-video studio with an evidence-based current-state snapshot and finish the remaining drawing-engine release work without overstating automated checks.
 
-**Architecture:** The merged system keeps product state in PostgreSQL, submits long-running work through Redis/BullMQ, and executes model, TTS, browser-review, and FFmpeg operations in a separate Worker. `Production.videoPipeline` freezes the selected pipeline per production; `legacy-v3` is still the persisted default, while `frametell-parity` adds Film Kit, page review/repair, and whole-film consistency review before preview/export.
+**Architecture:** The merged system keeps product state in PostgreSQL, submits long-running work through Redis/BullMQ, and executes model, TTS, browser-review, and FFmpeg operations in a separate Worker. `Production.videoPipeline` freezes the selected pipeline per production; `legacy-v3` is still the persisted default, while `drawing-engine-v3` adds Film Kit, page review/repair, and whole-film consistency review before preview/export.
 
 **Tech Stack:** Node.js 22.19+, pnpm 10.33.2, TypeScript, React/Vite, Hono, Prisma/PostgreSQL, BullMQ/Redis, Pi Agent, Zod, Playwright/Chrome, FFmpeg, Vitest, and Playwright Test.
 
 ## Global Constraints
 
 - GitHub default branch is `master`. Start all new work from current `origin/master`, not the already merged `codex/topic-to-video` branch.
-- Locked Frametell upstream revision is `6145f7e3482628543bd6f2d68fe3b618d366213a`.
-- Do not change the persisted default from `legacy-v3` until the real 18-pair, three-reviewer quality gate passes.
+- The drawing engine is vendored in `packages/drawing-engine`; there is no upstream revision lock, sync script, or audit job.
+- Do not change the persisted default from `legacy-v3` until manual acceptance with real generated results is complete.
 - Historical productions without `videoPipeline` must continue to resolve to `legacy-v3`; do not migrate or reinterpret them silently.
 - Preview, automated review, and MP4 export must consume the same trusted visual payload and deterministic `renderAt(globalMs)` timeline.
 - Keep API keys server-side. Never commit `.env`, `.data/`, generated videos, review screenshots, or private score files.
 - Use exact file staging. The workspace contains intentionally untracked agent/process documents; never run `git add .`.
-- The benchmark configuration remains 6 topics × 3 runs, Chinese, 16:9, 90 seconds, fixed model and fixed voice from `benchmarks/video-parity/topics.json`.
+- The removed parity benchmark is historical; release confirmation now relies on manual acceptance with a fixed model and voice.
 - Every behavior change follows red-green-refactor, includes focused tests, and ends in a reviewable commit.
 
 ---
@@ -100,7 +107,7 @@ The local services were healthy when this handoff was generated:
 - Speech: Volcengine TTS configured
 - Vision reviewer: disabled and not configured
 - Persisted video pipeline: `legacy-v3`
-- Local ignored `.env`: `TIMOTV_FRAMETELL_PARITY=1`, so this machine forces the effective pipeline to parity
+- Local ignored `.env`: `TIMOTV_VIDEO_PIPELINE=drawing-engine-v3`, so this machine forces the effective pipeline to `drawing-engine-v3`
 
 Do not copy credentials into issues, logs, prompts, or this repository.
 
@@ -132,10 +139,8 @@ This record proves the earlier 175-second failure was recovered by an explicit d
 | --- | --- |
 | Frozen lockfile resolution | Passed |
 | `pnpm typecheck` | Passed |
-| `pnpm test` | 43 files passed; 282 tests passed; 3 environment-dependent tests skipped |
-| Pixel regression | All 7 cases executed and passed without an external Frametell checkout |
-
-The three skips are two source-inventory comparisons that require the external locked Frametell checkout and one optional media case. They do not skip the pixel regression.
+| `pnpm test` | 40 files passed; 277 tests passed; 1 optional test skipped |
+| Engine suite | `pnpm --filter @timotv/drawing-engine test`: 55 tests passed |
 
 ### Full local verification run before merge
 
@@ -143,8 +148,8 @@ The three skips are two source-inventory comparisons that require the external l
 | --- | --- |
 | `RUN_INTEGRATION=1 PLAYWRIGHT_CHANNEL=chrome pnpm test:integration` | 35/35 passed using real PostgreSQL, Redis, Worker, system TTS, Chrome, and FFmpeg |
 | `PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e` | 60 passed; 2 optional live-preview cases skipped |
-| `pnpm engine:audit` | Passed with the locked upstream checkout |
-| `pnpm benchmark:video-parity -- --fixture` | 18 pairs and 3 generated fixture score files; report logic gate passed |
+| `pnpm engine:audit` | Historical; the audit job and upstream checkout were removed |
+| `pnpm benchmark:video-parity -- --fixture` | Historical; the benchmark tooling was removed |
 
 ### Evidence boundary
 
@@ -168,20 +173,17 @@ The three skips are two source-inventory comparisons that require the external l
 
 - The settings backend supports `production.videoPipeline`, but `SettingsPage.tsx` has no video-pipeline control.
 - README currently says the pipeline can be selected in service settings. That statement is ahead of the UI; today selection requires the settings API or an environment override.
-- `LocalSettingsStore.get()` returns the effective pipeline after applying `TIMOTV_FRAMETELL_PARITY`; it does not expose the persisted value and override state separately. A UI added without fixing this will be confusing on this machine.
-- No live benchmark adapter exists. `scripts/run-video-parity-benchmark.mjs` requires `--runner <module>` or `TIMOTV_VIDEO_BENCHMARK_ADAPTER`.
-- No 36-video real A/B run has been produced.
-- No three-human blinded scoring has been performed.
+- `LocalSettingsStore.get()` returns the effective pipeline after applying `TIMOTV_VIDEO_PIPELINE`; it does not expose the persisted value and override state separately. A UI added without fixing this will be confusing on this machine.
+- The live benchmark adapter and the 18-pair blinded gate were removed. No automated quality gate replaces them; release confirmation depends on manual acceptance with real generated results.
+- No real generated acceptance run has been recorded for the vendored engine yet.
 - The vision reviewer is not configured locally. The existing probe proves image input is accepted, not that judgments are accurate.
 
 ### Engineering and operations risks
 
 - Root `package.json` still says Node `>=22.12.0`, while Pi dependencies require Node 22.19+. README correctly says 22.19+; align the package engine in the next dependency-maintenance change.
 - A normal first install runs the `ffmpeg-static` download script and can wait on network delivery. A download timeout is not a source-code failure.
-- `pnpm engine:audit` needs `FRAMETELL_ENGINE_ROOT` or the expected sibling checkout. Unit pixel regression is self-contained.
 - DB state and Redis submission are not transactional. There is recovery scanning, but no full transactional outbox.
 - There is no cancel API, cost budget, authentication, authorization, quota, rate limit, cloud object storage, deployment pipeline, or backup/restore runbook.
-- `docs/architecture.md` contains older wording about controlled SVG output that should be reconciled with the merged Frametell-derived V3 program path.
 - Remote `main` is redundant and still points at the original baseline. It is not the default; do not delete it without an explicit repository-cleanup decision.
 
 ### Workspace hygiene
@@ -197,15 +199,12 @@ Do not bulk-stage them. Private `.env`, `.data/`, `node_modules/`, and `test-res
 
 ## 7. Overall Roadmap
 
-### P0: Close the Frametell-quality release loop
+### P0: Finish the controlled release
 
-1. Add an honest pipeline selector to service settings, including persisted/effective/overridden state.
-2. Implement and test the live benchmark adapter for both TimoTV and Frametell.
-3. Generate 36 real videos: 18 fixed pairs, one output per system.
-4. Collect complete blinded score files from three unique reviewers.
-5. Produce the report and fix any failed runtime, lint, review-rate, score-delta, or preference gate.
-6. Only after a full pass, change the default for newly created productions to `frametell-parity` while preserving old productions.
-7. Record the report hash, environment fingerprint, upstream revision, and final decision in verification docs.
+1. Add an honest pipeline selector to service settings, including persisted/effective/overridden state (Section 8).
+2. Review real generated results with a fixed model and voice, and record the acceptance evidence in `docs/verification.md`.
+3. Only after acceptance, change the persisted default for newly created productions from `legacy-v3` to `drawing-engine-v3` while preserving old productions.
+4. Record the environment fingerprint and final decision in verification docs.
 
 ### P1: Production hardening
 
@@ -256,11 +255,11 @@ Add this expectation to the existing pipeline settings test:
 
 ```ts
 const overridden = new LocalSettingsStore(join(dir, 'overridden.json'), {
-  TIMOTV_FRAMETELL_PARITY: '1',
+  TIMOTV_VIDEO_PIPELINE: 'drawing-engine-v3',
 });
 expect((await overridden.get()).production).toEqual({
   videoPipeline: 'legacy-v3',
-  effectiveVideoPipeline: 'frametell-parity',
+  effectiveVideoPipeline: 'drawing-engine-v3',
   overriddenByEnvironment: true,
 });
 ```
@@ -298,9 +297,8 @@ const effectiveVideoPipeline = resolveVideoPipeline(
   s.production.videoPipeline,
   e,
 );
-const overriddenByEnvironment = ['0', '1'].includes(
-  e.TIMOTV_FRAMETELL_PARITY ?? '',
-);
+const overriddenByEnvironment =
+  normalizeVideoPipeline(e.TIMOTV_VIDEO_PIPELINE) !== undefined;
 ```
 
 Return:
@@ -365,11 +363,11 @@ test('视频质量管线保存后只影响新制作', async ({ page }) => {
   await page.getByRole('tab', { name: '视频制作', exact: true }).click();
   await page
     .getByLabel('视频质量管线', { exact: true })
-    .selectOption('frametell-parity');
+    .selectOption('drawing-engine-v3');
   await page.getByRole('button', { name: '保存配置', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('配置已保存');
   expect(patches[0].production).toEqual({
-    videoPipeline: 'frametell-parity',
+    videoPipeline: 'drawing-engine-v3',
   });
   await expect(page.getByText('只影响新制作')).toBeVisible();
 });
@@ -414,7 +412,7 @@ Extend `Pane` with `production`, add a `Clapperboard` icon tab, and render a nat
     }
   >
     <option value="legacy-v3">Legacy V3（稳定默认）</option>
-    <option value="frametell-parity">Frametell Parity（受控发布）</option>
+    <option value="drawing-engine-v3">绘图引擎 V3（受控发布）</option>
   </select>
 </label>
 ```
@@ -441,7 +439,7 @@ Expected: pass on desktop and narrow Playwright projects without horizontal over
 
 - [ ] **Step 7: Correct README behavior**
 
-Keep the statement that the settings page can select the pipeline, and add that `TIMOTV_FRAMETELL_PARITY=1|0` is an operator override that disables the UI control until removed.
+Keep the statement that the settings page can select the pipeline, and add that `TIMOTV_VIDEO_PIPELINE=drawing-engine-v3|legacy-v3` is an operator override that disables the UI control until removed.
 
 - [ ] **Step 8: Commit the UI change**
 
@@ -480,7 +478,7 @@ pnpm typecheck
 pnpm test
 ```
 
-Expected: all test files pass; external upstream inventory checks may skip when `FRAMETELL_ENGINE_ROOT` is absent, but visual pixel regression must run.
+Expected: all test files pass. The removed upstream audit and pixel-regression suites are no longer part of this gate.
 
 - [ ] **Step 4: Commit only if Task 3 added evidence**
 
@@ -494,6 +492,8 @@ If no file changed because existing coverage is sufficient, do not create an emp
 ---
 
 ## 9. Live Benchmark Gate After the Settings Task
+
+> **Historical:** The benchmark scripts and thresholds in this section were removed on 2026-11-12. Do not run them.
 
 Do not start paid generation until the user confirms the expected model/TTS cost and the exact way to invoke the reference Frametell system.
 
@@ -573,7 +573,7 @@ Modify only after the signed-off report exists:
 - `docs/roadmap.md`
 - `docs/verification.md`
 
-Change defaults for new settings/new productions to `frametell-parity`. Preserve this Worker fallback forever unless a separate migration is approved:
+Change defaults for new settings/new productions to `drawing-engine-v3`. Preserve this Worker fallback forever unless a separate migration is approved:
 
 ```ts
 production.videoPipeline ?? 'legacy-v3'
@@ -586,10 +586,9 @@ pnpm typecheck
 pnpm test
 RUN_INTEGRATION=1 PLAYWRIGHT_CHANNEL=chrome pnpm test:integration
 PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e
-FRAMETELL_ENGINE_ROOT=/Users/onechuan/code/ai/open/frametell/packages/engine pnpm engine:audit
 ```
 
-Do not call the rollout complete until all commands pass and a newly created production visibly records `frametell-parity`.
+Do not call the rollout complete until all commands pass and a newly created production visibly records `drawing-engine-v3`.
 
 ## 11. Next Agent Startup Commands
 
@@ -606,11 +605,7 @@ pnpm typecheck
 pnpm test
 ```
 
-Do not overwrite the existing `.env`. If running the full upstream audit:
-
-```sh
-FRAMETELL_ENGINE_ROOT=/Users/onechuan/code/ai/open/frametell/packages/engine pnpm engine:audit
-```
+Do not overwrite the existing `.env`. There is no upstream audit step; the engine is vendored in this repository.
 
 ## 12. Copy-Paste Prompt for the Next Agent
 
@@ -620,13 +615,13 @@ You are continuing TimoTV from merged PR #1 on GitHub repository onechuan/timo-s
 Start from origin/master, not codex/topic-to-video. Read these files in order:
 1. README.md
 2. docs/superpowers/plans/2026-11-12-topic-to-video-agent-handoff.md
-3. docs/superpowers/specs/2026-11-11-frametell-video-effect-parity-design.md
-4. docs/superpowers/plans/2026-11-11-frametell-video-effect-parity.md
+3. docs/verification/drawing-engine-v3-integration.md
+4. docs/DRAWING_ENGINE_CHANGES.md
 5. docs/verification.md
 
-Your first implementation task is Section 8 of the handoff: add an honest video-pipeline selector to service settings. Use TDD. Expose configured, effective, and environment-overridden pipeline state; save only the configured value; disable the selector while TIMOTV_FRAMETELL_PARITY forces an override; state that changes affect new productions only. Preserve historical productions and the Worker fallback to legacy-v3.
+Your first implementation task is Section 8 of the handoff: add an honest video-pipeline selector to service settings. Use TDD. Expose configured, effective, and environment-overridden pipeline state; save only the configured value; disable the selector while TIMOTV_VIDEO_PIPELINE forces an override; state that changes affect new productions only. Preserve historical productions and the Worker fallback to legacy-v3.
 
-Run the focused tests and then pnpm typecheck plus pnpm test. Do not run the paid 36-video benchmark until the user confirms cost and the exact reference Frametell invocation. Do not switch the default to frametell-parity until a real three-reviewer report passes every published gate. Never commit .env, .data, generated videos, or untracked agent/process artifacts. Stage exact files only.
+Run the focused tests and then pnpm typecheck plus pnpm test. Do not switch the default to drawing-engine-v3 until manual acceptance with real generated results is recorded. Never commit .env, .data, generated videos, or untracked agent/process artifacts. Stage exact files only.
 ```
 
 ## 13. Completion Definition
@@ -634,11 +629,9 @@ Run the focused tests and then pnpm typecheck plus pnpm test. Do not run the pai
 The next phase is complete only when:
 
 1. The settings UI honestly controls the persisted pipeline and displays environment overrides.
-2. A reproducible live adapter produces 36 real videos from the fixed benchmark set.
-3. Three unique blinded reviewers submit complete scores.
-4. The generated report passes every fixed quality gate.
-5. The default changes only for new productions, with historical fallback preserved.
-6. Typecheck, unit, integration, E2E, and upstream audit all pass.
-7. Verification docs contain evidence hashes and do not describe fixture scores as human evaluation.
+2. Manual acceptance with real generated results is recorded in the verification docs.
+3. The default changes only for new productions, with historical fallback preserved.
+4. Typecheck, unit, integration, and E2E all pass.
+5. Verification docs contain the evidence and do not overstate automated checks.
 
-That is the handoff boundary. Everything after it belongs to production hardening or media editing, not the Frametell parity release gate.
+That is the handoff boundary. Everything after it belongs to production hardening or media editing, not the drawing-engine release gate.
