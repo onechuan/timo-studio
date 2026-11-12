@@ -1,10 +1,9 @@
 # Drawing engine changes
 
-TimoTV maintains its drawing engine in `packages/drawing-engine`. The initial
-baseline was derived from Frametell `@frametell/engine` 0.8.0 under AGPL-3.0;
-provenance and license terms are recorded in `THIRD_PARTY_NOTICES.md` and
-`docs/OPEN_SOURCE.md`. The engine is vendored here and no upstream checkout is
-needed to build, test, or run TimoTV.
+TimoTV maintains its drawing engine in `packages/drawing-engine`. The engine is
+derived from an AGPL-3.0 licensed upstream project; provenance and license terms
+are recorded in `THIRD_PARTY_NOTICES.md` and `docs/OPEN_SOURCE.md`. The engine is
+vendored here and no upstream checkout is needed to build, test, or run TimoTV.
 
 The following reviewed changes keep the bundled example projects and the
 TimoTV runtime working:

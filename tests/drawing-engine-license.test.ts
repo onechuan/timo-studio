@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
 describe('drawing engine licensing', () => {
-  it('publishes AGPL and Frametell provenance before copied code is shipped', async () => {
+  it('publishes AGPL and upstream provenance before copied code is shipped', async () => {
     const [license, notices, provenance] = await Promise.all([
       readFile(new URL('../LICENSE', import.meta.url), 'utf8'),
       readFile(new URL('../THIRD_PARTY_NOTICES.md', import.meta.url), 'utf8'),

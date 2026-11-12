@@ -119,4 +119,4 @@ apps/web  ──HTTP──> apps/api ──enqueue──> Redis / BullMQ
 
 ## 开源许可
 
-TimoTV 使用 [GNU AGPL-3.0-only](LICENSE) 许可。绘图引擎包含基于 Frametell 0.8.0 的派生实现；上游来源、许可和本地修改说明见 [`docs/OPEN_SOURCE.md`](docs/OPEN_SOURCE.md) 与 [`docs/DRAWING_ENGINE_CHANGES.md`](docs/DRAWING_ENGINE_CHANGES.md)。
+TimoTV 使用 [GNU AGPL-3.0-only](LICENSE) 许可。绘图引擎包含第三方 AGPL-3.0 源码；来源与许可声明见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) 和 [`docs/OPEN_SOURCE.md`](docs/OPEN_SOURCE.md)，本地修改说明见 [`docs/DRAWING_ENGINE_CHANGES.md`](docs/DRAWING_ENGINE_CHANGES.md)。
