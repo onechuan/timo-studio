@@ -83,6 +83,34 @@ test('large brand typography stays inside its declared layout box', async () => 
     await rm(root, { recursive: true, force: true });
   }
 });
+test('centered HTML text is measured by its glyphs, not its full-width box', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'timo-centered-text-'));
+  try {
+    const p = fixture();
+    // Centered text gets a 1200px layout box whose left edge falls outside the
+    // canvas even though the drawn glyphs sit well inside it.
+    const source =
+      "TIMO.visual('scene', P => { P.text('会议', { x: 192, y: 356, align: 'c', size: 40, at: P.c(0) - 1, cps: 9 }); });";
+    p.scenes[0]!.artwork = {
+      version: 3,
+      runtime: 'timotv-dsl-1',
+      intent: 'Left-side centered caption',
+      source,
+      sourceHash: hashProgramSource(source),
+      style: 'chalkboard',
+      extras: [],
+    };
+    const review = await captureSceneReview(
+      p,
+      0,
+      root,
+      AbortSignal.timeout(20000),
+    );
+    expect(review.issues.filter((i) => i.severity === 'error')).toEqual([]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 test('real Chrome captures isolated evidence at export dimensions, without paid APIs', async () => {
   const root = await mkdtemp(join(tmpdir(), 'timo-review-'));
   const abort = new AbortController();
