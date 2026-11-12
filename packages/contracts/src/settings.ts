@@ -42,15 +42,23 @@ export interface SettingsUpdate {
     elevenlabs?: { apiKey?: string | null; voice?: string };
   };
 }
-export const videoPipelineValues = ['legacy-v3', 'frametell-parity'] as const;
+export const videoPipelineValues = ['legacy-v3', 'drawing-engine-v3'] as const;
 export type VideoPipeline = (typeof videoPipelineValues)[number];
+/** Returns a supported pipeline, or undefined for retired/unknown persisted values. */
+export function normalizeVideoPipeline(
+  value: unknown,
+): VideoPipeline | undefined {
+  return videoPipelineValues.find((pipeline) => pipeline === value);
+}
 export function resolveVideoPipeline(
-  configured: VideoPipeline,
-  env: { TIMOTV_FRAMETELL_PARITY?: string },
+  configured: VideoPipeline | string | undefined,
+  env: { TIMOTV_VIDEO_PIPELINE?: string },
 ): VideoPipeline {
-  if (env.TIMOTV_FRAMETELL_PARITY === '1') return 'frametell-parity';
-  if (env.TIMOTV_FRAMETELL_PARITY === '0') return 'legacy-v3';
-  return configured;
+  return (
+    normalizeVideoPipeline(env.TIMOTV_VIDEO_PIPELINE) ??
+    normalizeVideoPipeline(configured) ??
+    'legacy-v3'
+  );
 }
 export interface VoiceDefinition {
   id: string;
@@ -311,9 +319,19 @@ const volcSettingsSchema = z
 const elevenSettingsSchema = z
   .object({ apiKey: settingsSecret.optional(), voice: settingsText.optional() })
   .strict();
+const videoPipelineSchema = z.enum(videoPipelineValues).default('legacy-v3');
+const persistedVideoPipelineSchema = z.preprocess(
+  (value) => normalizeVideoPipeline(value) ?? 'legacy-v3',
+  z.enum(videoPipelineValues).default('legacy-v3'),
+);
 export const productionSettingsSchema = z
   .object({
-    videoPipeline: z.enum(videoPipelineValues).default('legacy-v3'),
+    videoPipeline: videoPipelineSchema,
+  })
+  .strict();
+const persistedProductionSettingsSchema = z
+  .object({
+    videoPipeline: persistedVideoPipelineSchema,
   })
   .strict();
 export const settingsSchema = z
@@ -339,7 +357,7 @@ export const settingsUpdateSchema = z
 export const privateSettingsSchema = z
   .object({
     revision: z.number().int().nonnegative(),
-    production: productionSettingsSchema.default({}),
+    production: persistedProductionSettingsSchema.default({}),
     model: modelSettingsSchema,
     reviewer: reviewerSettingsSchema.optional(),
     speech: z

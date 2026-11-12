@@ -132,7 +132,7 @@ test('parity production shows kit, page, whole-film, preview, and MP4 progress',
   };
   const base = {
     projectId: 'parity-progress',
-    videoPipeline: 'frametell-parity',
+    videoPipeline: 'drawing-engine-v3',
     revision: 4,
     aspectRatio: '16:9',
     brief: {
@@ -241,7 +241,7 @@ test('parity production shows kit, page, whole-film, preview, and MP4 progress',
     return route.fulfill({
       json: {
         id: 'parity-progress',
-        title: '帧言品质进度',
+        title: '绘图引擎品质进度',
         kind: 'generated',
         aspectRatio: '16:9',
         status: 'draft',

@@ -245,7 +245,7 @@ export function productionHandler(
         production.videoPipeline ?? 'legacy-v3',
         env,
       );
-      return pipeline === 'frametell-parity'
+      return pipeline === 'drawing-engine-v3'
         ? {
             ...common,
             planFilmKit: async (production) =>
